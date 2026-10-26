@@ -1,0 +1,13 @@
+[house]
+platform = "."
+languages = ["python", "markdown"]
+licence = "MIT"
+
+[packages.root]
+path = "."
+
+[sync]
+files = ["dev.py", ".github/workflows/ci.yml"]
+
+[ci]
+skip = {}

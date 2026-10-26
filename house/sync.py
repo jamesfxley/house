@@ -1,0 +1,257 @@
+# SPDX-License-Identifier: MIT
+# AR-21: editor customizations merge with optional devcontainer overlays.
+"""Produce deterministic tracked configuration copies using bounded overlays."""
+
+import json
+import sys
+import tomllib
+
+from house.config import extension_module
+from house.core import CannotRunError, read
+from house.providers import get
+from house.workflow import render as render_workflow
+
+COPIES = {
+    ".clang-format": ".clang-format",
+    ".clang-tidy": ".clang-tidy",
+    ".editorconfig": ".editorconfig",
+}
+JSON_FILES = {".devcontainer/devcontainer.json": "devcontainer"}
+CLANGD = {
+    "CompileFlags": {
+        "Add": list,
+        "Remove": list,
+        "Compiler": str,
+        "CompilationDatabase": str,
+    },
+    "Index": {"Background": str, "StandardLibrary": bool},
+    "Diagnostics": {"Suppress": list, "UnusedIncludes": str, "MissingIncludes": str},
+    "InlayHints": {
+        "Enabled": bool,
+        "ParameterNames": bool,
+        "DeducedTypes": bool,
+        "Designators": bool,
+        "TypeNameLimit": int,
+    },
+}
+DEVCONTAINER = {
+    "name": str,
+    "build": {"dockerfile": str, "context": str, "args": dict},
+    "image": str,
+    "runArgs": list,
+    "customizations": {"vscode": {"settings": dict, "extensions": list}},
+}
+
+
+def validate_values(value, file_id, key=""):
+    if isinstance(value, dict):
+        for name, item in value.items():
+            validate_values(item, file_id, f"{key}.{name}" if key else name)
+    elif isinstance(value, list):
+        for item in value:
+            validate_values(item, file_id, key)
+    elif (
+        file_id == "clangd" and key == "InlayHints.TypeNameLimit" and type(value) is int
+    ):
+        if value < 0:
+            raise CannotRunError("clangd: InlayHints.TypeNameLimit must be nonnegative")
+    elif type(value) not in {str, bool}:
+        raise CannotRunError(
+            f"{file_id}: unsupported value type at {key}; "
+            "supported: strings, booleans, lists, tables",
+        )
+
+
+def scalar_keys(schema, prefix=""):
+    found = set()
+    for key, expected in schema.items():
+        label = f"{prefix}.{key}" if prefix else key
+        if isinstance(expected, dict):
+            found.update(scalar_keys(expected, label))
+        elif expected not in {list, dict}:
+            found.add(label)
+    return found
+
+
+def validate_fields(value, schema, file_id, prefix=""):
+    for key, item in value.items():
+        label = f"{prefix}.{key}" if prefix else key
+        if key not in schema:
+            raise CannotRunError(
+                f"{file_id}: unsupported key {label}; supported: {sorted(schema)}",
+            )
+        expected = schema[key]
+        if isinstance(expected, dict):
+            if not isinstance(item, dict):
+                raise CannotRunError(f"{file_id}: {label} must be a table")
+            validate_fields(item, expected, file_id, label)
+        elif type(item) is not expected:
+            raise CannotRunError(
+                f"{file_id}: unsupported type for {label}; "
+                f"expected {expected.__name__}",
+            )
+
+
+def merge(base, overlay, file_id, replacements=(), prefix=""):
+    if isinstance(base, dict) and isinstance(overlay, dict):
+        result = dict(base)
+        for key, value in overlay.items():
+            label = f"{prefix}.{key}" if prefix else key
+            result[key] = (
+                merge(base[key], value, file_id, replacements, label)
+                if key in base
+                else value
+            )
+        return result
+    if isinstance(base, list) and isinstance(overlay, list):
+        result = list(base)
+        result.extend(item for item in overlay if item not in result)
+        return result
+    if type(base) is type(overlay) and base == overlay:
+        return base
+    if prefix in replacements:
+        return overlay
+    raise CannotRunError(
+        f"{file_id}: scalar conflict at {prefix}; declare sync.replace.{file_id}",
+    )
+
+
+def yaml_value(value, indent=0):
+    """Emit the supported map/list/scalar subset with JSON-quoted YAML strings."""
+    space = " " * indent
+    if isinstance(value, dict):
+        lines = []
+        for key, item in value.items():
+            if isinstance(item, (dict, list)) and item:
+                lines.extend(
+                    [f"{space}{json.dumps(key)}:", yaml_value(item, indent + 2)],
+                )
+            else:
+                lines.append(f"{space}{json.dumps(key)}: {json.dumps(item)}")
+        return "\n".join(lines)
+    if isinstance(value, list):
+        return "\n".join(f"{space}- {json.dumps(item)}" for item in value)
+    raise CannotRunError("YAML root must be a table")
+
+
+def profile_overlays(repo):
+    """Load only declared profiles and merge their public sync contribution."""
+    overlays = []
+    sys.path.insert(0, str(repo.root))
+    try:
+        for declaration in repo.config["trees"]:
+            module, attribute = declaration["profile"].split(":")
+            profile = getattr(extension_module(repo, module), attribute)
+            if profile.enabled:
+                overlays.append(profile.sync_overlay)
+    finally:
+        sys.path.pop(0)
+    return overlays
+
+
+def render_structured(platform, name, contributions, replacements, languages=()):
+    file_id = "clangd" if name == ".clangd" else JSON_FILES[name]
+    if name == ".clangd":
+        value = tomllib.loads(read(platform / "config/clangd.toml"))
+        schema = CLANGD
+    else:
+        value = json.loads(read(platform / "config/devcontainer.json"))
+        schema = DEVCONTAINER
+    language_base = platform / "config/cxx/devcontainer.json"
+    if name in JSON_FILES and "cxx" in languages and language_base.is_file():
+        value = merge(value, json.loads(read(language_base)), file_id)
+    validate_values(value, file_id)
+    validate_fields(value, schema, file_id)
+    unknown = set(replacements.get(file_id, ())) - scalar_keys(schema)
+    if unknown:
+        raise CannotRunError(
+            f"{file_id}: unsupported replacement keys {sorted(unknown)}; "
+            f"supported: {sorted(scalar_keys(schema))}",
+        )
+    for source in contributions:
+        addition = source.get(file_id, {})
+        validate_values(addition, file_id)
+        validate_fields(addition, schema, file_id)
+        value = merge(value, addition, file_id, replacements.get(file_id, ()))
+    if file_id == "devcontainer" and not (value.get("build") or value.get("image")):
+        raise CannotRunError("devcontainer: requires build or image")
+    if name == ".clangd":
+        return "# Generated by dev.py sync.\n" + yaml_value(value) + "\n"
+    return (
+        json.dumps({"//house": "Generated by dev.py sync.", **value}, indent=2) + "\n"
+    )
+
+
+def generated(repo):
+    platform = (repo.root / repo.config["house"]["platform"]).resolve()
+    config = repo.config["sync"]
+    contributions = [config["overlay"], *profile_overlays(repo)]
+    selected_ids = {
+        "clangd" if name == ".clangd" else JSON_FILES[name]
+        for name in config["files"]
+        if name == ".clangd" or name in JSON_FILES
+    }
+    for source in [*contributions, config["replace"]]:
+        for file_id in source:
+            if file_id not in selected_ids:
+                raise CannotRunError(
+                    f"{file_id}: unsupported overlay file id; "
+                    f"selected supported set: {sorted(selected_ids)}",
+                )
+    output = {}
+    for name in config["files"]:
+        if name == "dev.py":
+            output[name] = read(platform / "house/launcher/dev.py")
+        elif name == ".github/workflows/ci.yml":
+            output[name] = render_workflow(repo)
+        elif name in COPIES:
+            output[name] = "# Generated by dev.py sync.\n" + read(
+                platform / "config" / COPIES[name],
+            )
+        elif name in JSON_FILES or name == ".clangd":
+            output[name] = render_structured(
+                platform,
+                name,
+                contributions,
+                config["replace"],
+                repo.config["house"]["languages"],
+            )
+        else:
+            supported = sorted(
+                {*COPIES, *JSON_FILES, "dev.py", ".clangd", ".github/workflows/ci.yml"},
+            )
+            raise CannotRunError(
+                f"{name}: unsupported synced file; supported: {supported}",
+            )
+    return output
+
+
+def sync(repo, *, check=False):
+    output = generated(repo)
+    drift = []
+    for name, content in output.items():
+        path = repo.root / name
+        if check:
+            if read(path) != content:
+                drift.append(name)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8", newline="\n")
+    return drift
+
+
+def defaults(repo):
+    """Return copy/renderer destinations selected by the declared languages."""
+    return tuple(
+        sorted(
+            {
+                "dev.py",
+                *(
+                    path
+                    for name in repo.config["house"]["languages"]
+                    for path in get(name).sync_defaults
+                    if path != "ruff.toml"
+                ),
+            },
+        ),
+    )

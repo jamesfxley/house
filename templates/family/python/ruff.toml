@@ -1,0 +1,1 @@
+extend = "@PLATFORM@/config/ruff.toml"

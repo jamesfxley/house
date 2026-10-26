@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT
+"""Prove the sample value (AR-1)."""
+
+from sample.value import value
+
+
+def test_sample_value():
+    assert value() == 1

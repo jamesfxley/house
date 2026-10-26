@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: MIT
+# Pins refer to the configuration that already owns each version.
+[tools.ruff]
+providers = ["python"]
+executable = "ruff"
+package = "ruff"
+version_ref = "config/ruff.toml:required-version"
+
+[tools.pytest]
+profiles = ["tests", "platform-tests"]
+executable = "pytest"
+package = "pytest"
+version_ref = "pyproject.toml:dependency-groups.dev"
+
+[tools.clang-format]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "clang-format"
+version_ref = "config/.clang-version"
+apt = "clang-format-{version}"
+
+[tools.clang-tidy]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "clang-tidy"
+version_ref = "config/.clang-version"
+apt = "clang-tidy-{version}"
+
+[tools.clang]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "clang"
+version_ref = "config/.clang-version"
+apt = "clang-{version}"
+
+[tools.cmake]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "cmake"
+minimum = "3.24"
+apt = "cmake"
+
+[tools.ninja]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "ninja"
+minimum = "1.10"
+apt = "ninja-build"
+
+[tools.gcc]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "g++"
+minimum = "11"
+apt = "g++"
+
+[tools.doxygen]
+providers = ["cxx"]
+profiles = ["platform-tests"]
+executable = "doxygen"
+minimum = "1.9"
+apt = "doxygen"
+
+[tools.gh]
+profiles = ["online"]
+executable = "gh"
+minimum = "2"
+apt = "gh"

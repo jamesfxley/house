@@ -1,0 +1,46 @@
+# Shared API documentation defaults. Set PROJECT_NAME, PROJECT_BRIEF and INPUT in the repository Doxyfile.
+
+OUTPUT_DIRECTORY       = docs/api
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+
+# The public surface only. detail/ directories are unstable by definition and
+# the tests and examples are not API. INPUT is set by the consumer, because it
+# follows the module layout the repository chose.
+FILE_PATTERNS          = *.h *.hh *.hpp *.hxx *.ipp *.tpp *.inl
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */detail/*
+
+# Undocumented entities are omitted rather than listed empty: the reference
+# should show what has a stated contract, and WARN_IF_UNDOCUMENTED reports the
+# gaps instead of papering over them.
+#
+# HIDE_UNDOC_MEMBERS and HIDE_UNDOC_CLASSES must stay NO. The flags that hide an
+# entity from the reference also hide it from the warning, so with them YES the
+# api-docs job passes over undocumented entities. A negative control verifies
+# that undocumented public entities produce warnings.
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = NO
+QUIET                  = YES
+
+# Expand defaults for public APIs whose declarations use preprocessor macros.
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+
+# No Graphviz dependency: the include graphs are not worth requiring dot to be
+# installed wherever the reference is built.
+HAVE_DOT               = NO
+
+JAVADOC_AUTOBRIEF      = YES
+OPTIMIZE_OUTPUT_FOR_C  = NO
+BUILTIN_STL_SUPPORT    = YES
+SORT_MEMBER_DOCS       = NO
+GENERATE_TREEVIEW      = YES

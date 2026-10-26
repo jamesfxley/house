@@ -1,0 +1,10 @@
+{
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true
+      },
+      "extensions": []
+    }
+  }
+}

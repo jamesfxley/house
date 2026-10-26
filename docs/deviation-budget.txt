@@ -1,0 +1,2 @@
+# Counts Python suppression directives and configuration exclusions.
+python = 21

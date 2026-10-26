@@ -1,0 +1,20 @@
+# Pinned major version of the clang tooling for this repository.
+#
+# Both clang-format and clang-tidy are read from this pin, by build/lint/format
+# scripts and by CI, so every machine produces the same result.
+#
+# WHY PIN. Formatting is a consensus artifact: two versions disagree on output,
+# so an unpinned clang-format makes `--check` fail depending on who ran it.
+# Linting is a blocking gate: a newer clang-tidy adds checks, and an unpinned
+# one turns a routine package upgrade into a red build on an unrelated commit.
+#
+# UPGRADING is a deliberate commit of its own:
+#   1. Bump this file.
+#   2. Re-derive the alias list in .clang-tidy from the new version's
+#      documentation. Alias direction changes between releases -- verify no
+#      alias and its canonical target are both enabled.
+#   3. Run python3 dev.py format and commit the reformat separately from any behaviour
+#      change, so review can skip it.
+#   4. Fix or record every new finding. Never widen the deviation budget to
+#      absorb them silently.
+20

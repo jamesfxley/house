@@ -1,0 +1,72 @@
+# Python tooling configuration. All diagnostics are enabled except the
+# enumerated, justified language conventions below.
+required-version = "==0.16.4"
+
+target-version = "py311"
+line-length = 88
+
+[lint]
+select = ["ALL"]
+
+ignore = [
+    # ANN: Public interfaces carry type annotations; private helpers and tests
+    # need not annotate every function. Review by 2027-01-15.
+    "ANN",
+    # D100: Modules implementing a contract document it; other modules can
+    # state their purpose through their names. Review by 2027-01-15.
+    # D101: Public class contracts are documented centrally rather than
+    # repeated on each declaration. Review by 2027-01-15.
+    # D102: Shared method contracts are documented once rather than repeated
+    # on each implementation. Review by 2027-01-15.
+    # D103: Small helper functions can communicate their purpose through their
+    # names and tests. Review by 2027-01-15.
+    # D104: Package initialisers can contain only a version constant or a
+    # short package description. Review by 2027-01-15.
+    # D105: Python defines the meaning of magic methods. Review by 2027-01-15.
+    # D106: Nested class documentation is assessed in the consuming
+    # repository. Review by 2027-01-15.
+    # D107: Constructor parameters are documented at the class or in the
+    # public reference. Review by 2027-01-15.
+    "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
+    # T20: Command-line output uses print; review and output tests distinguish
+    # diagnostics from stray debugging. Review by 2027-01-15.
+    "T20",
+    # CPY001: The repository licence carries its copyright notice; source
+    # files carry SPDX identifiers. Review by 2027-01-15.
+    "CPY001",
+    # S603: Fixed tools use validated argument lists without a shell; review
+    # checks untrusted arguments. Review by 2027-01-15.
+    # S607: Tools resolve through PATH because installation locations vary;
+    # version checks validate pinned tools. Review by 2027-01-15.
+    "S603", "S607",
+    # PLR2004: Literal exit statuses and fixed format fields state the value
+    # being checked at its use. Review by 2027-01-15.
+    "PLR2004",
+    # FBT: Command flags use keyword-only boolean parameters so their meaning
+    # stays visible at calls. Review by 2027-01-15.
+    "FBT",
+    # EM: A one-use exception message need not be assigned to a separate
+    # variable. Review by 2027-01-15.
+    # TRY003: Refusal messages name their particular input rather than a fixed
+    # exception-class message. Review by 2027-01-15.
+    "EM", "TRY003",
+    # ERA001: Explanatory comments can describe commands or configuration
+    # lines that resemble code. Review by 2027-01-15.
+    "ERA001",
+    # D203: D211 enforces the chosen convention: no blank line before a class
+    # docstring. Review by 2027-01-15.
+    # D213: D212 enforces the chosen convention: a multi-line docstring
+    # summary starts on its first line. Review by 2027-01-15.
+    "D203", "D213",
+]
+
+[lint.per-file-ignores]
+# S101: pytest rewrites assertions into expectation failures; tests run
+# without Python optimisation. Review by 2027-01-15.
+"tests/**" = ["S101"]
+
+[format]
+# Formatting is not enforced by this gate. clang-format governs C++ because two
+# versions disagree on output; nothing here reformats Python, so `ruff format`
+# stays available as a tool without becoming a gate that fights the author.
+quote-style = "preserve"
