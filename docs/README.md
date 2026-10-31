@@ -6,6 +6,7 @@
 | [Architecture](architecture.md) | Gate and provider boundaries |
 | [Usage](usage-guide.md) | Commands and configuration |
 | [Orientation](orientation.md) | Repository conventions |
+| [Future work](future-work.md) | Deliberately deferred work |
 | [Deviations](deviations.md) | Existing standing configuration exclusions |
 | [Budget](deviation-budget.txt) | Suppression ceilings |
 | [Prefixes](requirement-prefixes.txt) | Requirement namespaces |
