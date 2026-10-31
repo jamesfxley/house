@@ -58,6 +58,7 @@ Each configured package has documents with one owner per fact:
 | architecture.md | Describe implementation structure |
 | usage-guide.md | Explain practical use of the public surface |
 | orientation.md | Record local invariants and traps |
+| future-work.md | Deferred work as `FW-<n>` entries; says so when it has none (`EN-03.7`) |
 | deviations.md | Approved standing deviations, rationale, risk and review date |
 | deviation-budget.txt | One approved ceiling per language |
 | requirement-prefixes.txt | Declare local ID prefixes |
@@ -66,9 +67,30 @@ Each configured package has documents with one owner per fact:
 Keep initial registers and exceptions empty; start suppression ceilings at zero.
 If omitting a document is permitted by the applicable contract, record the
 routing decision. Review the document set against the pinned standard.
-Release notes belong at the release, with approval, rather than in a changelog;
-deliberately deferred work belongs in the tracker. Tracker labels and every
-other GitHub write need their own approval.
+Release notes belong at the release, with approval, rather than in a changelog.
+Deferred work is a `docs/future-work.md` entry (`EN-03.7`), and the tracker holds
+defects only. Tracker labels and every other GitHub write need their own approval.
+
+## Publication
+
+A repository that becomes public meets these requirements; each is a GitHub
+write that needs its own approval. Before the repository is public, the files
+`dev.py sync` writes under `.github/` (the defect form and the pull-request
+template) are in its tree.
+
+- Secret scanning and push protection are enabled.
+- Private vulnerability reporting is enabled; `SECURITY.md` names it as the
+  route.
+- `main` is protected: strict required status checks naming the CI jobs, a pull
+  request required with zero required approvals, protection enforced for
+  administrators, and no push restrictions. The root commit is the bootstrap
+  exception (`EN-07.5`).
+- Squash merge is the only merge method, with the squash commit title taken from
+  the pull request title and a blank message (`EN-07.5`). Merge commits and
+  rebase merges are disabled.
+- Head branches are deleted when merged.
+- The label `defect` exists (`EN-07.6`), because an issue form cannot apply a
+  label the repository lacks.
 
 ## Language, CI and disclosure
 

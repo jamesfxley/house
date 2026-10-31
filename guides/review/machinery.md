@@ -11,8 +11,8 @@ Give every priced item one verdict:
 - `simplify`: name a cheaper mechanism for the same drift and its recurring cost
   difference. Consider this first.
 - `remove`: name the protection knowingly given up; obtain approval before removal.
-- `defer`: identify the concrete blocker, cost and destination for follow-up.
-  Creating or editing its tracker entry still needs specific approval.
+- `defer`: identify the concrete blocker, cost and `docs/future-work.md` entry
+  for follow-up (`EN-03.7`); a tracker issue holds defects only.
 
 Consider removal or folding before strengthening. Added entry points,
 declaration files, gates, flags and cross-repository transactions must retire

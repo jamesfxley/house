@@ -17,7 +17,8 @@ and [documentation review](../documentation.md).
    evidence. Give each fact one owner; route rather than duplicate it. Read
    from the intended reader's entry point and check that their question is answered.
 5. Check stable requirement IDs, real pass criteria and actual named tests.
-   Deferrals belong in the tracker; measurements carry conditions in run records.
+   A deferral is a `docs/future-work.md` entry (`EN-03.7`), not a tracker issue;
+   measurements carry conditions in run records.
 6. Keep shared examples synthetic, instruction files small and code fences
    balanced. Preserve no-trailer, approval, sourcing and done-means-gates rules.
    A link gate pass does not prove that a command or statement is true.

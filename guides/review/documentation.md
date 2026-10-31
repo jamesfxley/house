@@ -73,8 +73,9 @@ use, how to contribute, and where the rules are, without searching the tree.
   not carry.
 - **Pasted examples** (`EN-03.5`): a code block showing the public API that no
   test compiles. Name the block; say which test could own it.
-- **Deferrals** (`EN-03.7`): a note about work not done that carries a
-  rationale, a cost or a plan rather than an issue reference alone.
+- **Deferrals** (`EN-03.7`, `EN-07.6`): a note about work not done that carries
+  its reasoning instead of an entry ID; a `docs/future-work.md` entry that fails
+  the mechanism's checks; a tracker issue that reports no defect.
 
 ## Coverage
 
