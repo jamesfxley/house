@@ -22,6 +22,7 @@ FOOTER = re.compile(
     r"^\W*(?:co-authored-by|signed-off-by|generated (?:with|by))\b",
     re.IGNORECASE,
 )
+SQUASH_SUFFIX = re.compile(r" \(#[1-9]\d*\)$")
 ISSUE = re.compile(
     r"(?<!\w)(?:[\w.-]+/[\w.-]+)?#[1-9]\d*\b|https?://github\.com/[^\s/]+/[^\s/]+/(?:issues|pull)/\d+\b",
 )
@@ -29,6 +30,7 @@ ISSUE = re.compile(
 
 def message_findings(message, path):
     lines = message.splitlines() or [""]
+    lines[0] = SQUASH_SUFFIX.sub("", lines[0], count=1)
     subject = lines[0]
     findings = []
     match = SUBJECT.fullmatch(subject)
