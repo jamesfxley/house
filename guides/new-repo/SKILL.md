@@ -75,8 +75,8 @@ defects only. Tracker labels and every other GitHub write need their own approva
 
 A repository that becomes public meets these requirements; each is a GitHub
 write that needs its own approval. Before the repository is public, the files
-`dev.py sync` writes under `.github/` (the defect form and the pull-request
-template) are in its tree.
+`dev.py sync` writes under `.github/` (the defect form, the issue configuration
+that turns off blank issues and the pull-request template) are in its tree.
 
 - Secret scanning and push protection are enabled.
 - Private vulnerability reporting is enabled; `SECURITY.md` names it as the

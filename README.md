@@ -213,7 +213,7 @@ C++ formatter/analyser major versions come from `config/.clang-version`; Ruff's
 exact version comes from `config/ruff.toml`. Missing or mismatched tools return
 exit 2. Doxygen is required for the C++ docs gate. `house.sync.defaults` selects
 copy/renderer destinations per language; Python-only output contains `dev.py`,
-the workflow and `.editorconfig`. Ruff remains repo-owned with its native
+the workflow, `.editorconfig` and the GitHub issue and pull-request files. Ruff remains repo-owned with its native
 `extend` mechanism.
 The bounded clangd schema supports the existing nonnegative TypeNameLimit
 integer as well as its string/bool/list/map fields. All other numeric fields
