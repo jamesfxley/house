@@ -436,7 +436,13 @@ def test_nested_scaffold_refuses_a_template_that_hardcodes_the_platform(
 def test_family_sync_defaults_remain_referred_unless_languages_add_files(
     repo, infrastructure_source, complete,
 ):
-    inherited = [".editorconfig", ".github/workflows/ci.yml"]
+    inherited = [
+        ".editorconfig",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        ".github/ISSUE_TEMPLATE/defect.yml",
+        ".github/pull_request_template.md",
+        ".github/workflows/ci.yml",
+    ]
     if complete:
         inherited.append("dev.py")
     family = infrastructure_source / "family.toml"
