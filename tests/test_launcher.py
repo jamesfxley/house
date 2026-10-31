@@ -8,7 +8,18 @@ import sys
 
 import pytest
 
+from house import VERSION
 from tests.conftest import ROOT, commit, git, init
+
+NEXT_VERSION = "99.0.0"
+
+
+def set_next_version(platform):
+    version = platform / "house/__init__.py"
+    text = version.read_text()
+    current = f'VERSION = "{VERSION}"'
+    assert current in text
+    version.write_text(text.replace(current, f'VERSION = "{NEXT_VERSION}"'))
 
 
 def launch(root, *args, cwd=None, isolated=False):
@@ -36,10 +47,7 @@ def pinned_families(tmp_path):
     )
     (platform / "house.toml").write_text('[house]\nplatform="."\n')
     first = commit(platform)
-    version = platform / "house/__init__.py"
-    version.write_text(
-        version.read_text().replace('VERSION = "0.1.0"', 'VERSION = "0.1.1"'),
-    )
+    set_next_version(platform)
     second = commit(platform, "tests: change the synthetic platform version")
     families = []
     for name, pin in [("first family", first), ("second family", second)]:
@@ -62,7 +70,8 @@ def pinned_families(tmp_path):
 
 
 def test_two_real_pins_from_root_nested_and_isolated(pinned_families):
-    for (root, pin), expected in zip(pinned_families, ["0.1.0", "0.1.1"], strict=True):
+    versions = [VERSION, NEXT_VERSION]
+    for (root, pin), expected in zip(pinned_families, versions, strict=True):
         assert git(root / "platform", "rev-parse", "HEAD").strip() == pin
         nested = root / "nested directory" / "deeper"
         nested.mkdir(parents=True)

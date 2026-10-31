@@ -11,7 +11,7 @@ from house.core import CannotRunError
 from house.hooks import install
 from house.initialize import render
 from tests.conftest import ROOT, commit, git, init
-from tests.test_launcher import launch
+from tests.test_launcher import launch, set_next_version
 
 
 @pytest.fixture
@@ -49,10 +49,7 @@ def hooked_families(tmp_path):
             "second pinned implementation",
         ),
     )
-    version = source / "house/__init__.py"
-    version.write_text(
-        version.read_text().replace('VERSION = "0.1.0"', 'VERSION = "0.1.1"'),
-    )
+    set_next_version(source)
     second = commit(source)
     families = []
     for name, sha, marker in [
