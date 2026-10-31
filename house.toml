@@ -7,7 +7,13 @@ licence = "MIT"
 path = "."
 
 [sync]
-files = ["dev.py", ".github/workflows/ci.yml"]
+files = [
+    "dev.py",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/defect.yml",
+    ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
+]
 
 [ci]
 skip = {}
