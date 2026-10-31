@@ -8,9 +8,9 @@ For a defect: `Fixes #<n>`. Otherwise: none.
 
 ## Verification
 
-Each level against the final state. For a level not run, write "Not run",
-the reason, and the behaviour it leaves unverified. A repository that builds
-for no target gives Host only.
+Each level against the final state (`EN-07.8`). For a level not run, write
+"Not run", the reason, and the behaviour it leaves unverified. A repository
+that builds for no target gives Host only.
 
 - Host: the gate and test commands, and the result lines they printed.
 - Target build: the boards or targets built, and the commands.
