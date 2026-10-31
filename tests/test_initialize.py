@@ -438,6 +438,7 @@ def test_family_sync_defaults_remain_referred_unless_languages_add_files(
 ):
     inherited = [
         ".editorconfig",
+        ".github/ISSUE_TEMPLATE/config.yml",
         ".github/ISSUE_TEMPLATE/defect.yml",
         ".github/pull_request_template.md",
         ".github/workflows/ci.yml",

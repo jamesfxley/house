@@ -16,6 +16,7 @@ COPIES = {
     ".clang-format": ".clang-format",
     ".clang-tidy": ".clang-tidy",
     ".editorconfig": ".editorconfig",
+    ".github/ISSUE_TEMPLATE/config.yml": "github/config.yml",
     ".github/ISSUE_TEMPLATE/defect.yml": "github/defect.yml",
     ".github/pull_request_template.md": "github/pull_request_template.md",
 }
