@@ -21,6 +21,17 @@ from tests.test_standards import assert_pass
 
 
 @pytest.mark.parametrize(
+    "message",
+    [
+        "tests: update the fixture (#12)",
+        "tests: " + "x" * 65 + " (#123)",
+    ],
+)
+def test_squash_suffix_is_neither_subject_nor_issue_reference(message):
+    assert message_findings(message, "message") == []
+
+
+@pytest.mark.parametrize(
     ("message", "finding"),
     [
         ("tests: Uppercase", "opening lowercase"),
@@ -31,6 +42,9 @@ from tests.test_standards import assert_pass
         ("tests: update\n\nAudit-Token: any new trailer", "trailer"),
         ("tests: update\n\nGenerated with an assistant", "attribution"),
         ("tests: handle #12", "issue reference"),
+        ("tests: handle #12 (#13)", "issue reference"),
+        ("tests: update (#12)\n\nSee (#12)", "issue reference"),
+        ("tests: update(#12)", "issue reference"),
         ("tests: update\n\nSee owner/sample#12.", "issue reference"),
         (
             "tests: update\n\nhttps://github.com/owner/sample/issues/12",
