@@ -28,6 +28,6 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: The operating system, tool versions and the commit or release.
+      description: The operating system, tool versions and the commit or release, where they matter.
     validations:
-      required: true
+      required: false
