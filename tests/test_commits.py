@@ -181,6 +181,53 @@ def test_initial_main_uses_payload_tip_not_current_head(repo, write):
     assert head not in selected_commits(repo, selection, root_head)
 
 
+# AR-5: forced pushes select the created-ref range; ordinary pushes retain before.
+@pytest.mark.parametrize("default_branch", [False, True])
+def test_forced_push_uses_created_ref_range(repo, write, default_branch):
+    base, head = history(repo, write)
+    data = {
+        "repository": {"default_branch": "main"},
+        "ref": "refs/heads/main" if default_branch else "refs/heads/work",
+        "before": "f" * 40,
+        "after": head,
+        "forced": True,
+    }
+    if default_branch:
+        write("tests/three.txt", "three\n")
+        commit(repo.root)
+    path = write("event.json", json.dumps(data))
+    selection, root_head = event_selection(
+        repo, {"GITHUB_EVENT_NAME": "push", "GITHUB_EVENT_PATH": str(path)},
+    )
+    assert selected_commits(repo, selection, root_head) == (
+        [base, head] if default_branch else [head]
+    )
+
+
+def test_non_forced_push_with_unresolved_before_is_unavailable(repo, write):
+    _base, head = history(repo, write)
+    path = write("event.json", json.dumps({
+        "before": "f" * 40, "after": head, "forced": False,
+    }))
+    selection, root_head = event_selection(
+        repo, {"GITHUB_EVENT_NAME": "push", "GITHUB_EVENT_PATH": str(path)},
+    )
+    with pytest.raises(CannotRunError, match="rev-parse"):
+        selected_commits(repo, selection, root_head)
+
+
+@pytest.mark.parametrize("forced", [None, 0, 1, "true", [], {}])
+def test_push_rejects_non_boolean_forced(repo, write, forced):
+    _base, head = history(repo, write)
+    path = write("event.json", json.dumps({
+        "before": "f" * 40, "after": head, "forced": forced,
+    }))
+    with pytest.raises(CannotRunError, match="forced"):
+        event_selection(
+            repo, {"GITHUB_EVENT_NAME": "push", "GITHUB_EVENT_PATH": str(path)},
+        )
+
+
 def test_unreadable_event_payload(repo, write):
     path = write("event.json", b"\xff")
     with pytest.raises(CannotRunError, match="cannot read"):
