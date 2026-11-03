@@ -144,8 +144,11 @@ def event_selection(repo, env):
             "HEAD",
         )
     before = payload_field(data, "before")
+    forced = data.get("forced", False)
+    if not isinstance(forced, bool):
+        raise CannotRunError("event payload field must be a boolean: forced")
     head = env.get("GITHUB_SHA") or payload_field(data, "after")
-    if not re.fullmatch(r"0{40}|0{64}", before):
+    if not forced and not re.fullmatch(r"0{40}|0{64}", before):
         return before + ".." + head, "HEAD"
     default = payload_field(data, "repository", "default_branch")
     branch = payload_field(data, "ref")

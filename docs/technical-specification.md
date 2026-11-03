@@ -20,6 +20,10 @@ unreadable inputs as unavailable. Refusal tests shall check the finding text.
 **AR-5** — Commit checks shall inspect every commit selected by the configured
 range, including branch commits and merge parents. Resolved empty ranges shall
 pass; unresolved endpoints and incomplete shallow history shall be unavailable.
+Initial and forced pushes shall select all history to the payload tip on the
+default branch, or the range from the merge-base with `origin/<default branch>`
+to the tip on another branch. A present non-boolean `forced` field shall be
+unavailable. Other pushes shall select `before..head`.
 Installed hooks shall run the checkout's pinned launcher. The message hook shall
 check the pending message; pre-commit shall run standards excluding old commits.
 
@@ -218,6 +222,14 @@ The rows name the tests and the criteria below.
 - `test_commits.py`:
   `test_empty_and_unresolved_ranges`;
   empty ranges pass; missing endpoints return 2.
+- `test_commits.py`:
+  `test_forced_push_uses_created_ref_range`; forced pushes select the branch
+  range from the merge-base or default-branch history to the payload tip.
+- `test_commits.py`:
+  `test_non_forced_push_with_unresolved_before_is_unavailable`; an unresolved
+  ordinary push endpoint is unavailable.
+- `test_commits.py`:
+  `test_push_rejects_non_boolean_forced`; non-boolean forced fields are unavailable.
 - `test_commits.py`:
   `test_shallow_checkout_cannot_prove_missing_base`;
   incomplete history is unavailable.
