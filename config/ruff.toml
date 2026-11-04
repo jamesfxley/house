@@ -47,8 +47,8 @@ ignore = [
     "FBT",
     # EM: A one-use exception message need not be assigned to a separate
     # variable. Review by 2027-01-15.
-    # TRY003: Refusal messages name their particular input rather than a fixed
-    # exception-class message. Review by 2027-01-15.
+    # TRY003: Error messages name the input that failed, which a fixed
+    # exception-class message cannot do. Review by 2027-01-15.
     "EM", "TRY003",
     # ERA001: Explanatory comments can describe commands or configuration
     # lines that resemble code. Review by 2027-01-15.
@@ -66,7 +66,6 @@ ignore = [
 "tests/**" = ["S101"]
 
 [format]
-# Formatting is not enforced by this gate. clang-format governs C++ because two
-# versions disagree on output; nothing here reformats Python, so `ruff format`
-# stays available as a tool without becoming a gate that fights the author.
+# This gate does not enforce Python formatting. `ruff format` is available
+# separately. C++ uses clang-format because its versions produce different output.
 quote-style = "preserve"

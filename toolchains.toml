@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# Pins refer to the configuration that already owns each version.
+# Version pins refer to their owning configuration.
 [tools.ruff]
 providers = ["python"]
 executable = "ruff"
