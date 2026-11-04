@@ -233,7 +233,6 @@ def test_documentation_template_matches_declared_providers(
 
 @pytest.fixture
 def infrastructure_source(tmp_path, platform_source):
-    # A family infrastructure repository that pins House one level down.
     source = init(tmp_path / "infrastructure source")
     (source / "README.md").write_text("# Synthetic family infrastructure\n")
     (source / "family.toml").write_text(

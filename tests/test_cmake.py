@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Port the frozen language-level CMake regressions (AR-8)."""
+"""Check the CMake language helpers for regressions (AR-8)."""
 
 import json
 import re

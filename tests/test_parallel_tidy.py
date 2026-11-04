@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""AR-6: overlap independent work without sharing header databases or losing faults."""
+"""Overlap independent work without sharing header databases or losing faults (AR-6)."""
 
 import json
 import threading
@@ -100,7 +100,8 @@ def test_dependency_probes_overlap_and_keep_order(sources, monkeypatch):
             for name in ("gamma", "delta")
         ],
     ]
-    monkeypatch.setattr(clang_tidy.os, "cpu_count", lambda: 8)  # affinity still wins
+    monkeypatch.setattr(clang_tidy.os, "cpu_count", lambda: 8)
+    # The fixture's two-CPU affinity takes precedence.
     barrier = threading.Barrier(2)
     lock = threading.Lock()
     active = peak = 0

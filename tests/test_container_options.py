@@ -105,7 +105,7 @@ def test_options_without_a_resolved_image_cannot_render(repo):
 
 
 def test_container_user_applies_to_every_job_including_group_options(repo):
-    # AR-15: family-wide user survives repository replacement of require rows.
+    # The family-wide user survives repository replacement of `require` rows (AR-15).
     declare(repo, "--security-opt seccomp=unconfined")
     repo.config["ci"]["container_user"] = "0"
     for name, job in model(repo)["jobs"].items():
@@ -116,7 +116,7 @@ def test_container_user_applies_to_every_job_including_group_options(repo):
 
 
 def test_container_user_is_validated_independently_of_image_selection():
-    # AR-15: the family can declare the user before a registry digest is set.
+    # The family can declare the user before a registry digest is set (AR-15).
     data = {"house": {"platform": ".", "languages": ["python"]},
             "ci": {"container_user": "0"}}
     assert validate(data)["ci"]["container_user"] == "0"
@@ -127,6 +127,6 @@ def test_container_user_is_validated_independently_of_image_selection():
 
 
 def test_container_user_without_an_image_leaves_jobs_on_the_runner(repo):
-    # AR-15: declaring the user does not select an image.
+    # Declaring the user does not select an image (AR-15).
     repo.config["ci"]["container_user"] = "0"
     assert all("container" not in job for job in model(repo)["jobs"].values())
