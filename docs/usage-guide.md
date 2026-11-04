@@ -7,15 +7,16 @@ Run `python3 dev.py check` from a checkout, or `py -3 dev.py check` on Windows.
 `python3 dev.py sync` writes declared configuration copies; `sync --check`
 checks their content. `synced-files` checks copied files and generated CI.
 [Configuration](../README.md#public-configuration-reference) describes optional
-family references and repository precedence. The [suppression budget](../README.md#suppression-budget)
-is one ceiling per language; the register and requirement citations are reviewed.
+family references and repository precedence. The
+[suppression budget reference](../README.md#suppression-budget) describes the
+ceiling file. Review checks the deviation register and requirement citations.
 
 For C++, run `python3 dev.py build`, `python3 dev.py format --check`, and
-`python3 dev.py lint`. A full build group also checks its compile database
-and complete warning logs. `gate api-docs` checks the
-package Doxyfiles. Clang tooling must match the pinned major; Python lint uses
-the pinned Ruff version. A valid input is UTF-8. Unavailable tools or unreadable
-inputs return 2; real diagnostics return 1.
+`python3 dev.py lint`. A full build group also checks its compile database and
+complete warning logs. `gate api-docs` checks the package Doxyfiles. Clang
+tooling must match the pinned major; Python lint uses the pinned Ruff version. A
+valid input is UTF-8. Unavailable tools or unreadable inputs return 2; reported
+faults return 1.
 
 Use `python3 dev.py gate consumer` for installed package checks, or select a
 single tree with `--tree NAME`. Each installable package supplies an indexed

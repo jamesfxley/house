@@ -2,7 +2,7 @@
 
 House supplies development commands to repositories through a pinned submodule.
 Each checkout's `dev.py` loads its own platform revision without installing a
-global package. Python 3.11 or later is the runtime prerequisite; gates may
+global package. Python 3.11 or later is the runtime prerequisite; gates can
 require the tools declared for their language.
 
 Run these commands with your installed Python 3.11 or later. Use `python3`,
@@ -16,10 +16,10 @@ python3 dev.py check --all
 python3 dev.py --version
 ```
 
-The same launcher works when named from a nested directory. Its configuration
-and imports resolve from the launcher location. Path arguments retain their
-caller's working directory. Missing pinned code returns exit 2 with a submodule
-initialisation command.
+The launcher also works from a nested directory. It resolves configuration and
+imports from its own location, and path arguments from the caller's working
+directory. If pinned code is missing, it exits with status 2 and prints a
+submodule initialisation command.
 
 ## Registered checks
 
@@ -38,7 +38,7 @@ initialisation command.
 | `consumer` | `house.gates.consumer` | Isolated install, prefix relocation and indexed find_package consumer builds per installable package mode, and the host programs a package names in `consumer_executables` |
 | `api-docs` | `house.gates.api_docs` | Public input directories and Doxygen warning checks |
 
-Unknown gates and empty requested groups return exit 2.
+An unknown gate or an empty requested group exits with status 2.
 
 `check` selects registered groups other than `online`; `--all` adds that group.
 `--group` accepts repeated options or comma-separated names. `--ci` fails a
@@ -49,28 +49,29 @@ could not establish a verdict. Faults take precedence over unavailable checks.
 
 ## Configuration and extensions
 
-`house.toml` declares a compatibility line, a platform path, languages, packages,
-group extensions, local gate modules, tree profiles, sync inputs, CI obligations
-and optional family references. Unknown keys and malformed declarations return exit 2.
-C++ format, lint and build execution and Python lint are implemented. Markdown
-uses document links and suppression counts. Synced files compare the committed workflow
-with deterministic output from applicable groups and declared obligations.
-The [C++ CMake API](cxx/README.md) supplies strict targets and package exports;
-`python3 dev.py gate consumer` proves their installed consumption.
-A package may add `consumer_executables`, the host consumer programs that gate
-also runs, and `consumer_cases`, installed-consumer variants that must run or must
-be refused with a stated message; see the [C++ API](cxx/README.md).
+`house.toml` declares a platform path, languages, packages, group extensions,
+local gate modules, tree profiles, sync inputs, CI obligations and optional
+family references. An unknown key or malformed declaration exits with status 2.
+House runs C++ formatting, lint and builds, and Python lint. For Markdown, it
+checks document links and suppression counts. The `synced-files` gate compares
+the committed workflow with output generated from applicable groups and declared
+CI requirements. The [C++ CMake API](cxx/README.md) supplies strict targets and
+package exports; `python3 dev.py gate consumer` checks that consumers can use
+the installed packages. A package may add `consumer_executables`, the host
+consumer programs that gate also runs, and `consumer_cases`, installed-consumer
+variants that must run or must be refused with a stated message; see the [C++
+API](cxx/README.md).
 
 A local gate module exports `GATE`, with the declared name and group, and
 implements `applies(repo)` and `run(repo, argv)`. It imports public types from
 `house.api`: `Repo`, `Finding`, `Result`, `Gate`, `TreeProfile`, and `Provider`.
-`applies` returns `True` or a nonempty reason; `run` returns a `Result`.
-A declaration may add `repair`, the command that regenerates the module. When
-the declared module is absent, that gate fails with the module's path and the
-repair text while every other gate still runs; without `repair`, or when the
-module exists but fails to import, the run is unavailable.
-Language metadata defines source and licence conventions. Suppression names,
-justification, approval and the prose register are checked by review.
+`applies` returns `True` or a nonempty reason; `run` returns a `Result`. A
+declaration may add `repair`, the command that regenerates the module. When the
+declared module is absent, that gate fails with the module's path and the repair
+text while every other gate still runs; without `repair`, or when the module
+exists but fails to import, the run is unavailable. Language metadata defines
+source and licence conventions. Review checks the
+[suppression policy](#suppression-budget).
 
 ### Public configuration reference
 
@@ -117,20 +118,23 @@ name = "sample-host"
 profile = "sample_family.profiles:host"
 ```
 
-The module exports the existing public gate or TreeProfile interface. A repository
+The module exports the public `Gate` or `TreeProfile` interface. A repository
 can declare its own gates and trees using the same syntax. Package options are
 `path`, optional `budget`, `modes`, `consumer_executables` and `consumer_cases`.
 The [C++ API](cxx/README.md) specifies the consumer options. `[groups]` names
 additional gate lists. `[sync]` selects `files`, structured `overlay` data and
-explicit scalar `replace` lists. `[ci]` selects `container`, `container_user`, `skip`, `require`
-and `axes`; see [generated CI](#generated-ci). `[context]` registers
-`config_directories`; see [context](#agent-conveniences). `[house]` declares
-`platform`, `languages` and `licence`.
+explicit scalar `replace` lists. `[ci]` selects `container`, `container_user`,
+`skip`, `require` and `axes`; see [generated CI](#generated-ci). `[context]`
+registers `config_directories`; see [context](#agent-conveniences). `[house]`
+declares `platform`, `languages` and `licence`.
 
 ### Suppression budget
 
-Each package's `budget` defaults to `docs/deviation-budget.txt` beneath its path.
-The file has one nonnegative ceiling per language, with optional comments:
+The suppression policy is
+[EN-00.3 to EN-00.7](standard/engineering/00-conformance.md). Each package's
+`budget` points to a file of suppression ceilings and defaults to
+`docs/deviation-budget.txt` beneath its path. The file has one nonnegative
+ceiling per language, with optional comments:
 
 ```text
 cxx = 2
@@ -138,13 +142,14 @@ python = 1
 ```
 
 Each suppression directive counts once, including file and scope directives;
-configuration disables count each named check or negative pattern and scope.
-The pinned C++ configuration is the baseline; root additions and nested disables
-count. C++ comment text is excluded from this count. String literals do not
+configuration disables count each named check or negative pattern and scope. The
+pinned C++ configuration is the baseline. Additions at the root and disables in
+nested configuration count, excluding C++ comment text. String literals do not
 count. Missing language ceilings mean zero. Counts above ceilings fail; lower
 counts report `lower LANGUAGE to COUNT`. `gate deviations --ratchet` writes
-those lower ceilings only when every package passes. Approval, exact check
-names, reasons and register completeness remain review obligations.
+those lower ceilings only when every package passes. The gate does not check the
+approval, check names, reasons or deviation register required by that policy;
+review covers them.
 
 ## Development
 
@@ -161,12 +166,13 @@ the other modules are private implementations. Tests use synthetic repositories
 and actual Git submodule pins. [CONTRIBUTING.md](CONTRIBUTING.md) describes
 changes and messages; [SECURITY.md](SECURITY.md) describes vulnerability reports.
 
-`python3 dev.py sync` renders declared copies; `sync --check` compares their exact
-content. Copy-only files refuse overlays. Structured clangd and VS Code overlays
-merge maps, extend lists without duplicates and refuse conflicting scalars unless
-`sync.replace` lists the field. Unknown keys and unsupported types return exit 2.
-The CI workflow is rendered through the same command. Ruff configuration is
-repository-owned and extends the pinned base rather than being synced.
+`python3 dev.py sync` writes the files House manages, and `sync --check` reports
+any that differ. A copied file accepts no overlay. A structured file (clangd or
+devcontainer configuration) accepts one: maps merge, lists extend without
+duplicates, and a conflicting scalar is an error unless `sync.replace` names it.
+An unknown key or unsupported type exits with status 2. The CI workflow is rendered through the
+same command. Ruff configuration is repository-owned and extends the pinned base
+rather than being synced.
 
 `python3 dev.py commits --range BASE..HEAD` checks every commit in a range;
 `commits --root` checks all history reachable from HEAD. With neither option,
@@ -179,15 +185,16 @@ tip on the default branch, or the range from the merge-base with
 
 `python3 dev.py hook install` writes executable `.house/hooks` shims and sets
 local `core.hooksPath`. Both shims call this checkout's launcher through the
-installing interpreter. Existing custom hook settings and edited files cause
-a refusal. `hook pre-commit` runs standards except commits; `hook commit-msg FILE`
-checks a pending message. `python3 dev.py doctor` checks installed hook paths,
-declared tool versions without changing settings.
-Review still checks imperative meaning, body reasoning and the dominant area.
+installing interpreter. An existing custom hook setting or edited hook file
+prevents installation. `hook pre-commit` runs standards except commits;
+`hook commit-msg FILE` checks a pending message. `python3 dev.py doctor` checks
+installed hook paths and declared tool versions without changing settings.
+Review checks the subject's imperative wording, the body's reasoning and the
+area named in the subject.
 
 For `schedule`, `workflow_dispatch` and `repository_dispatch`, the commits gate
-reports PASS because those events introduce no commits; ranges are checked on
-push and pull_request. An explicit `--range` or `--root` still checks that
+reports PASS because those events introduce no commits. It checks ranges on
+`push` and `pull_request`. An explicit `--range` or `--root` still checks that
 selection. Every other unrecognised event returns exit 2. The default local
 range covers commits pending against the upstream; after a bypassed commit is
 pushed, hosted push checks are the backstop.
@@ -204,31 +211,33 @@ No build tree is deleted by the Python helper.
 
 `python3 dev.py format --check` checks owned C++ files; omitting `--check`
 formats them. `python3 dev.py lint` runs declared source linters. Python lint
-enumerates indexed files while excluding every gitlink. C++ uses the root merged
-compile database, tree discovery for scope configuration, and a closed temporary
-dependency file. Unreached headers fail; included headers get main-file include
-checks. Profiles may supply `HOUSE_CLANG_TIDY_ARGS` as a JSON string array in
-`env`, alongside compiler environment variables. No cross compiler, target or
-SDK is assumed by House.
+enumerates indexed files while excluding every gitlink. C++ uses the merged
+compile database at the root and discovers clang-tidy configuration in each
+source directory. Its temporary dependency file is closed before the compiler
+runs. A header that no unit includes fails the gate; an included header is also
+checked as a main file. Profiles may supply `HOUSE_CLANG_TIDY_ARGS` as a JSON
+string array in `env`, alongside compiler environment variables. No cross
+compiler, target or SDK is assumed by House.
 
 C++ formatter/analyser major versions come from `config/.clang-version`; Ruff's
 exact version comes from `config/ruff.toml`. Missing or mismatched tools return
 exit 2. Doxygen is required for the C++ docs gate. `house.sync.defaults` selects
 copy/renderer destinations per language; Python-only output contains `dev.py`,
-the workflow, `.editorconfig` and the GitHub issue and pull-request files. Ruff remains repo-owned with its native
-`extend` mechanism.
-The bounded clangd schema supports the existing nonnegative TypeNameLimit
-integer as well as its string/bool/list/map fields. All other numeric fields
-remain unsupported. House declares Python and Markdown; C++ gates are N/A and need no
-CI skip allowances.
+the workflow, `.editorconfig` and the GitHub issue and pull-request files. The
+repository owns its Ruff configuration, which uses Ruff's `extend` mechanism.
+The supported clangd fields accept strings, booleans, lists and maps, and
+`TypeNameLimit` also accepts a nonnegative integer. All other numeric fields
+remain unsupported. House declares Python and Markdown; C++ gates are N/A and
+need no CI skip allowances.
 
-Named profiles register `build:NAME` and `lint:NAME` instances for custom groups.
-The base build instance is host; `dev.py build` runs all enabled trees. Named
-lint instances analyse that tree's commands and reached headers; the base lint
-instance checks merged ownership and header coverage across available compile
-contexts. `dev.py lint` runs the lint group, including named instances, so
-conditional profile code is checked under its own flags. Package Doxyfiles run
-from their package roots; explicit shared Doxyfiles run from the checkout root.
+Named profiles register `build:NAME` and `lint:NAME` instances for custom
+groups. The base build instance is host; `dev.py build` runs all enabled trees.
+Named lint instances analyse that tree's commands and reached headers; the base
+lint instance checks owned units and header coverage across the available
+compile commands. `dev.py lint` runs the lint group, including named instances,
+so conditional profile code is checked under its own flags. Package Doxyfiles
+run from their package roots; explicit shared Doxyfiles run from the checkout
+root.
 
 A gate may declare a `provider` name, a tuple of alternative provider names,
 or `None` for repository-wide gates. A tuple applies when any owner is declared.
@@ -260,17 +269,17 @@ name. `--json` adds `house_config` (`directory`, `local_notes_present`) and
 `config_directories` (name to path); `local_notes` keeps its list of existing
 files. An unresolvable location returns exit 2.
 
-`house.api.user_config_dir(name)` resolves `<base>/<name>` without creating it;
-`name` is one lowercase path segment (`[a-z][a-z0-9_-]*`). The base is, in order:
-
+`house.api.user_config_dir(name)` resolves `<base>/<name>` without creating it.
+The `name` is one lowercase path segment (`[a-z][a-z0-9_-]*`).
 `HOUSE_CONFIG_HOME`, when set, must be absolute and nonempty. Otherwise the
-resolver uses the native per-user configuration base, honouring an absolute
-XDG configuration override where supported. An unavailable required base is
-refused. Use `context` to locate your House config directory; shared documents
-refer to that directory by name.
+resolver uses the native per-user configuration base, honouring an absolute XDG
+configuration override where supported. If a required base is unavailable, the
+resolver raises an error. Use `context` to locate your House config directory;
+shared documents refer to that directory by name.
 
-A refusal raises `house.api.CannotRunError`. Text in an indexed file names a
-configuration directory by its name, never by path; `context` prints the path.
+An invalid directory request raises `house.api.CannotRunError`. Text in an
+indexed file names a configuration directory by its name, never by path;
+`context` prints the path.
 
 ## Tool preparation and scaffolding
 
@@ -313,21 +322,22 @@ runner. The environment is provided by `python3 dev.py toolchain install`.
 Templates render the configured platform path; a template that hardcodes the
 default path is refused. A pin path that is empty, or that equals or lies under
 a top-level path the scaffold writes (`docs`, `tests`, `.github`), is refused
-before anything is created. Nested pins initialize from the local source. When
-the source has `family.toml`, init records its path in the root `family` key. The
-family then sets the published URL of its pin, which House cannot know.
+before anything is created. Nested pins initialise from the local source. When
+the source has `family.toml`, init records its path in the root `family` key.
+The family then sets the published URL of its pin, which House cannot know.
 
 Init creates the initial local commit using your configured Git author identity.
 It preserves nonempty destinations and installs no tools or home configuration.
 The generated family pins the current platform commit; `--platform-source PATH`
 selects another clean local platform checkout. Its tracked submodule URL is the
-final distribution URL, with local clone sources configured before initialization.
-Until publication, configure local sources before a fresh submodule init too.
-One nested standard pin is retained. C++ and Markdown are other `--lang` choices;
-repeat the option for multiple providers. Python-only output has no C++ copies
-or skip allowances. `--kind platform` clones a local platform with its standard
-pin, while `--kind standard` clones that standalone standard without a platform
-pointer. Those two kinds retain their source history and have no configured remote.
+final distribution URL, with local clone sources configured before
+initialisation. Until publication, configure local sources before a fresh
+submodule init too. One nested standard pin is retained. C++ and Markdown are
+other `--lang` choices; repeat the option for multiple providers. Python-only
+output has no C++ copies or skip allowances. `--kind platform` clones a local
+platform with its standard pin, while `--kind standard` clones that standalone
+standard without a platform pointer. Those two kinds retain their source history
+and have no configured remote.
 
 ## Generated CI
 
@@ -353,30 +363,32 @@ matrix = { build_type = ["Debug"], profile = ["default", "large"] }
 profile = "SAMPLE_PROFILE"
 ```
 
-Every configure House makes of a tree (the build and consumer gates, and the
-consumer gate's producer) then adds `-DSAMPLE_PROFILE=<value>` when
-`HOUSE_MATRIX_PROFILE` is set and not empty, so the generated job's leg and a local
-`HOUSE_MATRIX_PROFILE=large python3 dev.py check` configure the same way. A consumer
-project the consumer gate builds is not given the variable, because it declares
-none. A key is a lowercase axis that appears in a `[[ci.require]]` matrix, other than
-`build_type` and `compiler`; a value is a CMake variable name that House does not
-set itself (`CMAKE_BUILD_TYPE`, the compiler, install and prefix variables,
-`<PREFIX>_ENABLE_TESTS`, `<PREFIX>_ENABLE_FUZZERS`) and no other axis names. A value
-of the environment variable may use letters, digits and `_.+-`. A malformed
-declaration makes `house.toml` malformed (exit 2). A literal `ci.container` selects the job image; `"devcontainer"`
-reads the strict JSON file's explicit image. Build-only devcontainers need an
-image selection before rendering. `ci.container_user` selects the user (or
-user:group) for every job container; it is appended as `--user VALUE` after
-per-group options and has no effect when no job image is selected. A `[[ci.require]]` entry's single-line
+The build and consumer gates add `-DSAMPLE_PROFILE=<value>` when
+`HOUSE_MATRIX_PROFILE` is set and not empty. A generated matrix job and a local
+`HOUSE_MATRIX_PROFILE=large python3 dev.py check` therefore configure the tree
+with the same value. The consumer gate applies the variable to its producer, and
+omits it from the consumer project because that project does not declare it.
+Each `[ci.axes]` key names a lowercase axis in a `[[ci.require]]` matrix,
+excluding `build_type` and `compiler`. Its value names a CMake variable that no
+other axis names and that House does not set itself. House reserves
+`CMAKE_BUILD_TYPE`, the compiler, install and prefix variables,
+`<PREFIX>_ENABLE_TESTS` and `<PREFIX>_ENABLE_FUZZERS`. The environment
+variable's value may use letters, digits and `_.+-`. An invalid declaration
+makes `house.toml` malformed (exit 2). A literal `ci.container` selects the job
+image. The value `"devcontainer"` reads the explicit image from the strict JSON
+file. Build-only devcontainers need an image selection before rendering.
+`ci.container_user` selects the user (or user:group) for every job container; it
+is appended as `--user VALUE` after per-group options and has no effect when no
+job image is selected. A `[[ci.require]]` entry's single-line
 `container_options` string is copied into that group's job only; it requires
-`ci.container`, and GitHub-unsupported `--network` and `--entrypoint` are
-refused. House never runs the options locally. A `prepare` array of single-line
-commands renders, in order, as named steps after tool preparation in that group's
-job; House never runs them locally either, and `synced-files` refuses an edited or
-removed step. Checkout disables persisted credentials. Main runs and matrix legs
-use distinct concurrency groups.
-The committed workflow must equal the generated output; `synced-files` reports
-edits with the regeneration command. Review checks the declared obligations.
+`ci.container`, and `--network` and `--entrypoint`, which GitHub does not
+support, cause an error. House never runs the options locally. A `prepare` array
+of single-line commands renders, in order, as named steps after tool preparation
+in that group's job; House never runs them locally either, and `synced-files`
+refuses an edited or removed step. Checkout disables persisted credentials. Main
+runs and matrix legs use distinct concurrency groups. The committed workflow
+must equal the generated output; `synced-files` reports edits with the
+regeneration command. Review checks the declared obligations.
 
 The optional `.devcontainer/devcontainer.json` sync file uses the `devcontainer`
 overlay ID. Its base contains editor settings and extensions; repositories or
