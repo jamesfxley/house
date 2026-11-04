@@ -1,9 +1,11 @@
 # Product family
 
-This repository owns a product family's packages, dependency graph, profiles
-and target-specific behavior. Its `house.toml` selects the pinned platform, optional `family` reference and
-package modes. A family reference reads the pin's `family.toml`; repository
-settings win, and inherited gates and trees import directly from that pin. Read README.md, CONTRIBUTING.md and docs/README.md before work.
+This repository owns a product family's packages, dependency graph, profiles and
+target-specific behaviour. Its `house.toml` selects the pinned platform,
+optional `family` reference and package modes. A family reference reads the
+pin's `family.toml`. Repository settings win, and inherited gates and trees
+import directly from that pin. Read README.md, CONTRIBUTING.md and
+docs/README.md before work.
 
 Done means `python3 dev.py check` passes against the final state and the final
 diff is reviewed. Use `py -3 dev.py check` on Windows where installed.
@@ -24,13 +26,15 @@ Warnings fail. Report unavailable checks as missing evidence, never as passes.
 | Implementation structure | `docs/architecture.md` |
 | Document routing | `docs/README.md` |
 
-Keep family facts here. Machine notes live in `local.md` in your House config
-directory; `python3 dev.py context` prints where that is. Extend the platform
-only through its declared configuration and `house.api`; do not edit pinned or
-synced files. Initialize recursive submodules before checks.
-Use pinned guide links, not installed copies. Document public installed module
-targets separately from internal exports. Commit subjects name the changed
-directory or dominant area; no trailers. The working agreements' approval
-boundaries apply.
+Keep this repository's purpose, done command and routing pointers in its
+AGENTS.md. Keep family-wide facts in family documentation. Machine notes live in
+`local.md` in your House config directory; `python3 dev.py context` prints where
+that is. Extend the platform only through its declared configuration and
+`house.api`; do not edit pinned or synced files. Initialise recursive submodules
+before checks. Use pinned guide links, not installed copies. Document public
+installed module targets separately from internal exports. Commit subjects and
+trailers follow EN-07.2 and EN-07.4 in
+`@PLATFORM@/standard/engineering/07-version-control.md`. The working agreements'
+approval boundaries apply.
 
 never create `CLAUDE.md` or `CLAUDE.local.md`
