@@ -37,10 +37,11 @@ An IDE's guessed command is not evidence of lint coverage.
 ## Tool versions and analyser configuration
 
 Formatter and analyser major versions come from the pin's
-`config/.clang-version`; a mismatch refuses to run. A tool upgrade needs
-approval. Re-derive canonical check names and aliases from the new tool's
-official documentation, reformat in a separate commit, and fix or obtain
-approval for each remaining finding. Never silently increase a deviation budget.
+`config/.clang-version`; a mismatch prevents the tool from running. A tool
+upgrade needs approval. Re-derive canonical check names and aliases from the new
+tool's official documentation, reformat in a separate commit, and fix or obtain
+approval for each remaining finding. Follow
+[EN-00.6](../../standard/engineering/00-conformance.md) for ceiling changes.
 
 After a clang-tidy configuration edit, inspect `--dump-config` and
 `--list-checks` for the pinned executable. Verify the intended set of checks,
@@ -51,12 +52,13 @@ Suppressions must name the enabled canonical check, not a disabled alias.
 
 Keep clang-tidy's configuration discovery; a scope file must inherit its parent.
 Headers are analysed in their including translation unit's context, so a
-header-adjacent exemption may not apply. Measure proposed scope disables before
-requesting approval. Run automated fixes one check at a time, inspect the diff,
-and rebuild every relevant configuration, including Release for optimisation
-sensitive warnings. A fix can delete an initialiser needed only under another
-compile definition, or rename `sample::value` without updating a string-keyed lookup.
-Do not regex-rename identifiers through include paths and string literals.
+header-adjacent exemption might not apply. Measure proposed scope disables
+before requesting approval. Run automated fixes one check at a time, inspect the
+diff, and rebuild every relevant configuration, including Release for
+optimisation sensitive warnings. A fix can delete an initialiser needed only
+under another compile definition, or rename `sample::value` without updating a
+string-keyed lookup. Do not regex-rename identifiers through include paths and
+string literals.
 
 Cross-toolchain system includes are supplied by family profile arguments and
 environment. Standalone clang-tidy does not accept clangd's `--query-driver`.
@@ -77,9 +79,9 @@ sources and retain the owned-warning log gate. Do not weaken warnings globally.
 A freestanding configure reports omitted hardening rather than implying that
 unsupported protection is active.
 
-The pinned house commit selects the helper API. Do not
-introduce an independent helper release or version guard. Library package
-versions and `find_package` compatibility are a separate public contract.
+The pinned House commit selects the helper API. Do not introduce an independent
+helper release or version guard. Library package versions and `find_package`
+compatibility are a separate public contract.
 
 ## Public packages and external consumers
 
@@ -108,10 +110,11 @@ Run `python3 dev.py gate consumer` for installable package modes. It builds
 producers in isolation, installs, relocates the prefix, and builds the indexed
 `tests/consumer/CMakeLists.txt` projects with package registries disabled. Those
 projects use `find_package` and documented imported targets. Verify installed
-package version boundaries: compatibility stays within a major and, below 1.0,
-within a minor. A successful in-tree alias build proves neither installed
-spelling nor compatibility. Profile consumers must use the profile's arguments;
-cross-compiled executables are built rather than run.
+package version boundaries against the
+[CMake API's compatibility contract](../../cxx/README.md). A successful in-tree
+alias build proves neither installed spelling nor compatibility. Profile
+consumers must use the profile's arguments; cross-compiled executables are built
+rather than run.
 
 For library version changes, update the declared package version, public header
 constants and their binding test together (EN-06.2). Tests compare constants
@@ -120,7 +123,7 @@ translation unit exists, also use a compile-time comparison for cross builds;
 keep test-only definitions off installed interfaces. Public compile definitions
 needed for ABI consistency belong on the owning target with PUBLIC propagation.
 
-For source fetching, initialize recursive submodule pins. A Git fetch must keep
+For source fetching, initialise recursive submodule pins. A Git fetch must keep
 nested pins; archive downloads are unsupported. Do not substitute sibling
 working trees for a pin when recording versioned measurements. Record actual
 revision, build type and configuration with measurements.

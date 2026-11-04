@@ -1,13 +1,14 @@
 # Machinery cost review
 
-For each mechanism touched, state the concrete consumer failure it prevents,
-the recurring cost per change or release, and whether ordinary review would
-notice the drift anyway. A consumer or a checker having fired is insufficient
-justification. Certainty has a cost even when detection is already covered.
+For each mechanism touched, state the concrete consumer failure it prevents, the
+recurring cost per change or release, and whether ordinary review would notice
+the drift anyway. A checker having fired does not alone justify its cost, even
+when a consumer was affected. Another check or ordinary review might cover the
+same failure.
 
 Give every priced item one verdict:
 
-- `keep`: clears the test; say why it stays.
+- `keep`: justify the protection and its recurring cost.
 - `simplify`: name a cheaper mechanism for the same drift and its recurring cost
   difference. Consider this first.
 - `remove`: name the protection knowingly given up; obtain approval before removal.

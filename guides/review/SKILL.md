@@ -44,11 +44,12 @@ EN-03 rule it breaks and quotes the text. Drop a preference no rule supports.
 An empty review is a valid result.
 
 A source defect needs a failing reproducer before the fix. Check negative tests
-for expected finding text as well as status so a crash cannot satisfy refusal.
-Do not change an existing test's expectation to fit a fix without approval.
-Search everywhere the changed policy applies, including sibling gates. Verify
-every specification, comment and message claim against the tree. Keep the fix
-bounded to the finding; wider cleanup needs a separate decision.
+for expected finding text as well as status so a crash cannot satisfy refusal. A
+crash returning the same status must never satisfy a negative control. Do not
+change an existing test's expectation to fit a fix without approval. Search
+everywhere the changed policy applies, including sibling gates. Verify every
+specification, comment and message claim against the tree. Keep the fix bounded
+to the finding; wider cleanup needs a separate decision.
 
 Review a finding's fix once for introduced defects, then stop the review chain.
 A defect introduced by that fix needs a failing test and a mutation proving the
@@ -59,6 +60,6 @@ remaining unchecked scope in the handoff, without a ledger.
 
 Close by separating ordinary corrections from decisions requiring approval:
 public API, dependency, suppression or deviation, version, destructive changes,
-and conflicting design choices. A report-only audit does not authorize edits.
-Honor authorization already present in the user's request; review is not a new
-approval barrier for ordinary authorized corrections.
+and conflicting design choices. A report-only audit does not authorise edits.
+Honour authorisation already present in the user's request; review is not a new
+approval barrier for ordinary authorised corrections.

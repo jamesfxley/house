@@ -1,13 +1,12 @@
 # C++ review checklist
 
-What source review spends its effort on in C++. The rules are the
-[`cxx-standard`](../../cxx-standard/SKILL.md) chapters; this is the order in which they tend to
-matter.
+Source review checks C++ against the
+[`cxx-standard`](../../cxx-standard/SKILL.md) chapters, in the order below.
 
-clang-tidy runs on this code and blocks the build, so **do not re-report what it
-already catches**. The reviewer's value is the `review` entries in the Other checks column of
-[enforcement-matrix.md](../../../standard/cxx/enforcement-matrix.md), the subset of the
-house rules no tool checks. Read it and work down it.
+clang-tidy blocks the build on findings, so do not report those findings again.
+Review covers the `review` entries in the Other checks column of the
+[enforcement matrix](../../../standard/cxx/enforcement-matrix.md). Read them and
+work through them.
 
 In rough order of how often they matter:
 
@@ -17,8 +16,8 @@ In rough order of how often they matter:
    changing the design remove the need? A new scope-wide disable is a finding
    unless `docs/deviations.md` gained a matching row in the same change.
 
-2. **Bounds on fixed-capacity storage** (`CXX-06.3`). This is the rule carrying
-   the weight of a disabled check, so nothing else is looking. For every
+2. **Bounds on fixed-capacity storage** (`CXX-06.3`). A tool check is
+   disabled for this rule, so review covers the gap. For every
    subscript: name the guard — a loop bound from the capacity, an early return,
    or an index type that cannot be out of range. If you cannot find one, that is
    a finding.
@@ -56,7 +55,7 @@ and the out-of-tree consumer test (`tests/consumer/`) outward.
    Inspect relocated installed interfaces for producer paths, warning flags and
    missing dependency discovery. Verify required public compile definitions.
 
-9. **Version boundaries.** The house pin selects helpers,
+9. **Version boundaries.** The House pin selects helpers,
    without a separate helper version guard. Installed libraries retain explicit
    package versions and compatibility checks. Test accepted and refused
    `find_package` versions across major boundaries and pre-1.0 minor boundaries;

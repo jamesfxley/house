@@ -6,10 +6,10 @@ description: "Read when scaffolding a repository or adopting the pinned standard
 # Scaffold a repository
 
 Read [engineering-standard](../engineering-standard/SKILL.md). Choose a library
-or application shape: a library owes an external consumer build for its public
+or application shape: a library needs an external consumer build for its public
 surface; an application with a reusable core must test that core as a library.
-Keep reusable platform behavior in the platform, family behavior in the family,
-and machine notes in `local.md` in your House config directory (`python3
+Keep reusable platform behaviour in the platform, family behaviour in the
+family, and machine notes in `local.md` in your House config directory (`python3
 dev.py context` prints where that is).
 
 Use `init` from a clean committed platform checkout. Standalone repositories
@@ -25,13 +25,13 @@ python3 dev.py init --kind family --lang python ../sample-family
 The kind is `standard`, `platform` or `family`. Repeat `--lang` for additional
 providers. Only the family kind renders `templates/` from the configured
 platform path, creates local Git state and configures one pin per level.
-Standard and platform kinds clone their corresponding source. Existing
-nonempty destinations are preserved. Prepare declared tools explicitly, then run
-`python3 dev.py check --ci` in the generated family before adoption.
-Templates provide initial content, not a second source of shared rules.
-Pinned guides remain authoritative, synced copies are hash-checked, and declared
-overlays are the only extension path. Use no symlinks or global runtime install.
-Adding a dependency or submodule needs specific approval.
+Standard and platform kinds clone their corresponding source. Existing nonempty
+destinations are preserved. Prepare declared tools explicitly, then run
+`python3 dev.py check --ci` in the generated family before adoption. Templates
+provide initial content. Shared rules remain in the pinned guides. Pinned guides
+remain authoritative, synced copies are hash-checked, and declared overlays are
+the only extension path. Use no symlinks or global runtime install. Adding a
+dependency or submodule needs specific approval.
 
 ## Repository content
 
@@ -106,7 +106,8 @@ through logging pipelines; a logger's exit status cannot stand in for a build.
 Use the platform's Python commands across operating systems and verify generated
 workflow coverage. An unavailable renderer or gate blocks that acceptance.
 
-Describe AI assistance once at repository level, without per-commit attribution.
+Describe AI assistance once at repository level, following the
+[EN-07.4 attribution policy](../../standard/engineering/07-version-control.md).
 A suitable README disclosure is:
 
 > This project is developed with AI assistance. Design decisions, review and
@@ -121,13 +122,14 @@ do not add a competing warranty statement to the licence.
 
 For an existing repository, inspect and preserve its changes first. Wire the
 pinned tooling, isolate any mechanical reformat in its own commit, then read and
-fix the diagnostics. Remaining suppressions and the measured opening ceilings
-need approval; do not absorb findings by silently weakening configuration.
+fix the diagnostics. Follow
+[EN-00.3 to EN-00.7](../../standard/engineering/00-conformance.md) for remaining
+suppressions and opening ceilings; do not silently weaken configuration.
 
 Stage only the intended files before indexed gates, then run the repository's
-done command, language checks and final diff review. Set the approved ceiling
-from justified surviving exceptions; increases need their own reasoned commit
-(EN-00.6). Check links and routing after rendering
-AGENTS.md at the repository root; paths in template content are root-relative.
-Do not claim a scaffold accepted until its applicable gates and fresh-checkout
-acceptance run. Never activate user-home configuration as part of scaffolding.
+done command, language checks and final diff review. Set the ceiling under
+[EN-00.6](../../standard/engineering/00-conformance.md). Check links and routing
+after rendering AGENTS.md at the repository root; paths in template content are
+root-relative. Do not claim a scaffold accepted until its applicable gates and
+fresh-checkout acceptance run. Never activate user-home configuration as part of
+scaffolding.
