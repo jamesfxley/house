@@ -91,10 +91,9 @@ def infrastructure_parsers(commands):
 
 
 class MissingGate:
-    """Stands in for a declared gate whose module is absent, so it fails with a repair.
+    """A missing gate module fails with the declaration's repair command.
 
-    The declaration's `repair` text names the command that regenerates the
-    module. Without it, an absent module stays unavailable.
+    Without `repair`, a missing module remains unavailable.
     """
 
     rules = ("EN-01.8",)
@@ -128,7 +127,7 @@ def declared_module_is_absent(error, module):
 
 def local_gates(repo: Repo):
     gates = []
-    # The CLI may also be called programmatically, without the root on sys.path.
+    # A programmatic call can arrive without the root on `sys.path`.
     sys.path.insert(0, str(repo.root))
     try:
         for declaration in repo.config["gates"]:

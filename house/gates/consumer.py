@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
-# AR-20: reuse matching producers; run expected refusals separately.
-"""Prove installable packages through relocated find_package consumers (AR-8)."""
+# Reuse matching producers; run cases expected to fail separately (AR-20).
+"""Check installed packages with relocated `find_package` consumers (AR-8)."""
 
 import argparse
 import os
@@ -88,10 +88,9 @@ def producer_without_tests(repo, tree):
 
 
 class Installs:
-    """Relocated producer installs that consumers with identical producers share.
+    """Consumers share a relocated install only when their producer commands match.
 
-    A producer is keyed by its tree and every argument that shapes it. A consumer
-    shares an install only when its producer command would have been identical.
+    The key includes the tree and every argument that affects the producer.
     """
 
     def __init__(self, root):
@@ -188,7 +187,7 @@ def case_sources(repo, tree):
 
 
 def case_steps(repo, tree, case, source, directory):
-    """Return (stage, command) pairs, ending where a case needs no more."""
+    """Yield (stage, command) pairs: producer, relocation, then consumer."""
     build = directory / "producer"
     prefix = directory / "stage"
     relocated = directory / "relocated prefix"
@@ -231,7 +230,7 @@ def case_failure(label, text):
 
 
 def refusal(label, stage, done, message):
-    """Return a failure unless the stage failed and said the declared message."""
+    """Return a failure unless the stage failed with the declared message."""
     if not done.returncode:
         return case_failure(label, f"{stage} succeeded but was expected to fail")
     if squashed(message) not in squashed(diagnostic(done)):
@@ -243,7 +242,7 @@ def refusal(label, stage, done, message):
 
 
 def success(label, stage, done, expected):
-    """Return a failure unless a stage ahead of the expected one succeeded."""
+    """Return a failure if the stage exited non-zero or printed a warning."""
     if done.returncode or warning(diagnostic(done)):
         ahead = f" before the expected {expected} failure" if expected else ""
         return case_failure(label, f"{stage} failed{ahead}\n{diagnostic(done)}")
@@ -287,7 +286,7 @@ def produce(repo, tree, entry, environment, base):
 
 
 def run_case(repo, tree, entry, environment, installs=None):
-    """Run one declared case; return a failing Result, or None when it held."""
+    """Run one declared case; return a failing `Result`, or `None` when it passes."""
     _, case, _ = entry
     expected = case.get("stage")
     with tempfile.TemporaryDirectory(prefix="house-case-") as temporary:

@@ -91,9 +91,9 @@ def c_comments(text: str) -> list[tuple[int, str]]:
 def comments(path: Path, text: str) -> dict[int, str]:
     """Map each line holding a comment to that comment, by the file's language.
 
-    Python's comments come from its tokenizer, so a `#` inside a string is not
-    one; a `#`-commented language's are the text from a `#` that opens a line
-    or follows whitespace. Any other file maps every line to itself.
+    Python comments come from its tokenizer, which excludes `#` inside strings.
+    In other languages with `#` comments, the marker opens a line or follows
+    whitespace. For any other file, each line maps to itself.
     """
     if path.suffix == ".py":
         return {

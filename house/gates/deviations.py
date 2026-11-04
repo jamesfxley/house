@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# AR-19: counts and ratchets ceilings; review checks registration.
+# The gate counts suppressions and lowers ceilings; review checks registration (AR-19).
 """Count suppressions against one ratcheting ceiling per language (EN-00.6)."""
 
 import fnmatch

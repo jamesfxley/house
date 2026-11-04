@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# AR-21: editor customizations merge with optional devcontainer overlays.
+# Editor customisations merge with optional devcontainer overlays (AR-21).
 """Produce deterministic tracked configuration copies using bounded overlays."""
 
 import json
@@ -251,7 +251,7 @@ def sync(repo, *, check=False):
 
 
 def defaults(repo):
-    """Return copy/renderer destinations selected by the declared languages."""
+    """Return copied and rendered file paths for the declared languages."""
     return tuple(
         sorted(
             {

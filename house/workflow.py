@@ -125,7 +125,7 @@ def job(repo, group, requirement, image):
 
 
 def job_container(repo, value, requirement, image):
-    """Render image and user/options without changing runner-only jobs (AR-15)."""
+    """Render container settings, leaving jobs without containers unchanged (AR-15)."""
     if image:
         value["container"] = {"image": image}
         options = []

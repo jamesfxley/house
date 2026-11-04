@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
-# AR-20: lint resolves trees once for each invocation.
-"""Lint owned units and headers with discovery and profile flags (AR-6)."""
+# Lint resolves trees once per invocation (AR-20).
+"""Lint owned units and headers with their configuration and profile flags (AR-6)."""
 
 import json
 import os
@@ -225,8 +225,8 @@ def tidy(repo, tree_name=None):
 
     def check_unit(job):
         entry, extra, environment = job
-        # A raw tree can list deliberate refusal variants of the same source.
-        # Match compile-db merge's first command without mutating that tree.
+        # A tree can contain variants intended to fail for the same source.
+        # Use the database merge's first-command rule without changing the tree.
         with tempfile.TemporaryDirectory(prefix="house-unit-") as temporary:
             scratch = Path(temporary)
             (scratch / DATABASE).write_text(json.dumps([entry]), encoding="utf-8")
@@ -260,7 +260,7 @@ def tidy(repo, tree_name=None):
                 "CXX-01.5",
                 "header unreached by any owned translation unit",
             )
-        # Every concurrent header owns its database until its analyser exits.
+        # Each header keeps its own database until its analyser exits.
         with tempfile.TemporaryDirectory(prefix="house-headers-") as temporary:
             scratch = Path(temporary)
             (scratch / DATABASE).write_text(
