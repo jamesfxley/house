@@ -31,10 +31,15 @@ re-report what they already catch**. Your value is the rules no tool checks.
 Each language's checklist names them in the order they tend to matter; work
 down it for that language's files.
 
-Two concerns apply in every language, after the checklist:
+Three concerns apply in every language, after the checklist:
 
 - **Traceability** (`EN-02.1`, `EN-04.2`). A new behavioural guarantee with no
-  requirement ID; a test for a specified behaviour that cites none.
+  requirement ID; a test for a specified behaviour that cites none; an ID
+  woven into a sentence instead of tagged after it, or repeated on every
+  contributing line.
+- **Comments** (`EN-03.10` to `EN-03.12`, `EN-00.9`). Check new and changed
+  comments, and the comments on changed code, against the
+  [prose checklist](checklists/prose.md).
 - **Exit paths and error reporting.** A gate or tool whose exit status says
   success where its own documented contract says failure, or that swallows an
   error it was written to surface. No rule ID governs this; the contract is the

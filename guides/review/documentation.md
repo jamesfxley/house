@@ -73,6 +73,10 @@ use, how to contribute, and where the rules are, without searching the tree.
   not carry.
 - **Pasted examples** (`EN-03.5`): a code block showing the public API that no
   test compiles. Name the block; say which test could own it.
+- **Writing** (`EN-03.9` to `EN-03.13`): check the text against the
+  [prose checklist](checklists/prose.md). Read the whole document an edit
+  touches, not only the changed lines, so that a spliced passage in another
+  register is found.
 - **Deferrals** (`EN-03.7`, `EN-07.6`): a note about work not done that carries
   its reasoning instead of an entry ID; a `docs/future-work.md` entry that fails
   the mechanism's checks; a tracker issue that reports no defect.

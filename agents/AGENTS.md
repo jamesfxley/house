@@ -85,3 +85,8 @@ history, narrative, dates and shipping notes from current-state prose; measured
 results and their conditions belong in run records. Markdown intended for
 pasting elsewhere, including issue and pull-request bodies and commit messages,
 goes in a fenced code block.
+
+Repository text follows `EN-03.9` to `EN-03.13`: one reader and register,
+plain and spare prose in British spelling, defined terms, comments that state
+what the code cannot, and one owner per fact. The terse style of messages
+between agents does not carry over into repository text.

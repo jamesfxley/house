@@ -22,3 +22,4 @@ and [documentation review](../documentation.md).
 6. Keep shared examples synthetic, instruction files small and code fences
    balanced. Preserve no-trailer, approval, sourcing and done-means-gates rules.
    A link gate pass does not prove that a command or statement is true.
+7. Check the prose against the [prose checklist](prose.md).
