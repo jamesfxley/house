@@ -34,6 +34,11 @@ rule and quotes the text.
    the rule (`EN-00.9`). Requirement IDs follow the sentence they support
    (`EN-02.1`).
 5. Comments on changed code were updated or removed (`EN-03.12`).
+6. Each comment reads on its own. Its subject and every referent ("the
+   guarantee", "this reason", "as above") are in the comment or in the code
+   beside it. When a change shortens or deletes a comment, re-read the
+   comments around it: a comment that relied on the removed text is now
+   incomplete (`EN-03.10`).
 
 ## Reference examples
 
