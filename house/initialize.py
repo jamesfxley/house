@@ -252,7 +252,7 @@ def reserved_names(pinned, languages):
 
 
 def refuse_collision(pin_path, pinned, languages):
-    """Refuse a pin path that would overwrite or sit inside scaffold output."""
+    """Reject a pin path that would overwrite or sit inside scaffold output."""
     first = PurePosixPath(pin_path).parts[0]
     if first.casefold() in reserved_names(pinned, languages):
         raise CannotRunError(
@@ -316,8 +316,7 @@ def initialize(repo, destination, kind, languages, *, source=None):
         raise CannotRunError("init requires a local platform checkout")
     if not (pinned / "standard/check.py").is_file():
         raise CannotRunError("source standard pin is absent; initialize it before init")
-    # Refuse an unpublished worktree state instead of silently pinning an older
-    # implementation than the one used to render its files.
+    # Reject a dirty source so the pin matches the code that renders the files.
     if git(origin, "status", "--porcelain", "--untracked-files=normal").strip():
         raise CannotRunError("init requires a clean, committed platform source")
     if kind == "family":

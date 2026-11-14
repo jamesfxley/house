@@ -69,7 +69,7 @@ def rows(value, label):
 
 
 def structured(value, label):
-    """Overlays are bounded JSON-compatible data; renderers own their schemas."""
+    """Overlays use JSON-compatible types; each renderer defines its fields."""
     if isinstance(value, dict):
         for key, child in value.items():
             structured(child, f"{label}.{key}")
@@ -130,7 +130,7 @@ CASE_OWNED = {
 
 
 def case_args(case, key, label):
-    """Validate a case's CMake arguments; the gate owns the location arguments."""
+    """Validate CMake arguments, reserving location arguments for the gate."""
     arguments = case.get(key, [])
     if not isinstance(arguments, list):
         problem(f"{label}.{key}", "expected an array of strings")
@@ -185,7 +185,7 @@ def consumer_cases(package, label):
 
 
 def case_trees(config):
-    """Refuse a case that names a tree other than host, fuzz or a declared one."""
+    """Reject a case outside the host, fuzz and declared trees."""
     declared = {"host", "fuzz", *(item["name"] for item in config["trees"])}
     for name, package in config["packages"].items():
         for case in package["consumer_cases"]:
@@ -381,7 +381,7 @@ def sync_settings(config):
 
 
 def context_settings(config):
-    """Validate the per-user directory names a family has context report."""
+    """Validate the per-user directory names a family asks `context` to report."""
     settings = config.setdefault("context", {})
     keys(settings, {"config_directories"}, "context")
     names = strings(

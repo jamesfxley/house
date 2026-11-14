@@ -7,10 +7,10 @@ findings; do not edit.
 Load [engineering-standard](../engineering-standard/SKILL.md), chapter
 `03-documentation`, and `00-conformance` where a document records a deviation.
 
-The specification is not yours: `docs/technical-specification.md` belongs to the
-[specification review](specification.md), and is not on your list. Doc comments in source belong to the
-source review. Where another document contradicts the specification, the finding is on
-the other document.
+The [specification review](specification.md) covers
+`docs/technical-specification.md`, and the [source review](source.md) covers doc
+comments. Where another document contradicts the specification, the finding
+belongs to the other document.
 
 ## Start with the gates
 
@@ -26,9 +26,8 @@ A command you cannot check without running it is checked against its source.
 
 ## Accuracy against the tree
 
-The largest class of finding, and the one no gate reads. A document is a set of
-claims about the repository; check each one against the repository as it
-stands, not against the document's own confidence.
+A document makes claims about the repository. Check each claim against the
+current tree; gates do not check their truth.
 
 **Commands.** Every command a document tells a reader to run exists as written:
 the script or target is there, every flag it passes is one the script accepts
@@ -37,7 +36,7 @@ sets is one something reads.
 
 **Paths and names.** Every path, file, directory, CMake option, target,
 function, type, macro and configuration key a document names exists under that
-name. A renamed symbol is the commonest drift.
+name. A renamed symbol can leave a stale reference.
 
 **Behaviour.** Every sentence saying what the code *does* — an order, a default,
 a limit, an error path, what happens when — matches the code that does it. Read
@@ -73,6 +72,10 @@ use, how to contribute, and where the rules are, without searching the tree.
   not carry.
 - **Pasted examples** (`EN-03.5`): a code block showing the public API that no
   test compiles. Name the block; say which test could own it.
+- **Writing** (`EN-03.9` to `EN-03.13`): check the text against the
+  [prose checklist](checklists/prose.md). Read the whole document an edit
+  touches, not only the changed lines, so that a spliced passage in another
+  register is found.
 - **Deferrals** (`EN-03.7`, `EN-07.6`): a note about work not done that carries
   its reasoning instead of an entry ID; a `docs/future-work.md` entry that fails
   the mechanism's checks; a tracker issue that reports no defect.
@@ -83,24 +86,22 @@ Use the explicit scope recorded by the [review guide](SKILL.md). For a whole
 surface review, list files and relevant requirements, matrix rows, suppressions,
 exit paths and test cases before reading. Judge each as ok, finding or unchecked
 with a reason; report every gap. A test-case verdict means the assertion can
-fail for a plausible defect, not merely that its label names a behavior.
+fail for a plausible defect, not merely that its label names a behaviour.
 
 ## How to report
 
 Open with a one-line verdict — how many findings, across how many documents, and
 which document carries the worst.
 
-Group by document. Most severe first: things that are *wrong* before things that
-are *missing*, and a wrong command before a wrong sentence, because a reader
-runs the command.
+Group by document. The most severe findings come first, followed by omissions. A
+wrong command takes precedence over a wrong sentence because the reader runs it.
 
 For each: the file and line, the claim, the evidence in the tree that
 contradicts it — a path, a line, a `--help` excerpt — and what to change. Where
 the fix is a judgement between correcting the document and correcting the code,
 say which one you think is authoritative and why.
 
-A review with nothing to report is a legitimate result. Say so plainly rather
-than manufacturing observations.
+A review can have no findings. Say so plainly.
 
 ## Close with coverage and decisions
 
@@ -109,8 +110,8 @@ introduced by this diff from pre-existing findings. Do not create a ledger.
 Distinguish ordinary corrections from decisions requiring approval under the
 working agreements. Report-only review grants no permission to change a
 specification, public API, dependency or deviation; check the current request's
-authorization before applying those changes.
+authorisation before applying those changes.
 
-Edits under `docs/` and to repository `AGENTS.md` are document checkpoints.
-Use explicit authorization already covering the change; otherwise prepare the
+Edits under `docs/` and to repository `AGENTS.md` are document checkpoints. Use
+explicit authorisation already covering the change; otherwise prepare the
 concrete correction and ask before applying it.

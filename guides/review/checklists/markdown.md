@@ -4,8 +4,8 @@ Read the pinned [documentation rules](../../../standard/engineering/03-documenta
 and [documentation review](../documentation.md).
 
 1. Check every changed claim against its authoritative owner: implementation
-   for current behavior, specification for commitments, official documentation
-   for external API or protocol behavior. Mark unsupported behavior UNCONFIRMED.
+   for current behaviour, specification for commitments, official documentation
+   for external API or protocol behaviour. Mark unsupported behaviour UNCONFIRMED.
 2. Resolve relative links from the containing file at its deployed location.
    Check guide links both in the platform and under a family's platform pin.
    Render templates at the root before judging their routing paths. Do not
@@ -22,3 +22,4 @@ and [documentation review](../documentation.md).
 6. Keep shared examples synthetic, instruction files small and code fences
    balanced. Preserve no-trailer, approval, sourcing and done-means-gates rules.
    A link gate pass does not prove that a command or statement is true.
+7. Check the prose against the [prose checklist](prose.md).

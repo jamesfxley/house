@@ -35,21 +35,19 @@ projects need the fake to test their own code against this one.
 
 ## The seam
 
-One interface per environment dependency, one fake behind it (`EN-04.1`). The
-part that needs real hardware shrinks to a thin adapter; everything else runs on
-a developer machine in milliseconds.
+A seam is an interface between portable code and an environment dependency. Each
+dependency has one interface and one fake (`EN-04.1`). A thin adapter holds the
+hardware code; the rest runs on a developer machine in milliseconds.
 
-Two things decide whether this works:
-
-**The fake implements the contract, not just the signature.** An adapter that
-returns an error where the contract says success will wedge a caller's drain
-loop — and a fake written to the contract will never show it. Where a contract
-has a subtle clause ("returns success for an empty bus and clears the latch"),
-the fake must be able to produce that case, and a test must exercise it.
+The fake implements the dependency's contract. An adapter that returns an error
+where the contract says success traps a caller in its drain loop, even when
+tests against the fake pass. Where a contract has a subtle clause ("returns
+success for an empty bus and clears the latch"), the fake must be able to
+produce that case, and a test must exercise it.
 
 Choose the smallest interface that models the dependency contract. Keep target
-adapters and their policies in the family; test the portable behavior with a
-contract-faithful fake.
+adapters and their policies in the family; test the portable behaviour with a
+fake that implements the contract.
 
 ## Fixture patterns worth reusing
 
@@ -68,8 +66,8 @@ template <typename Limits = DefaultLimits>
 ParseResult parse_byte_by_byte(Parser<Limits>&, std::string_view);
 ```
 
-**Boundary triples.** For every capacity: one below, exactly at, one above. For
-every counter: the wrap point.
+**Boundary triples.** Each capacity is tested one below, exactly at and one
+above its limit, and each counter at its wrap point.
 
 **Allocation counting.** Where the project commits to no post-initialisation
 allocation, override global `operator new`/`delete` to count. That override is
@@ -90,30 +88,28 @@ A sanitizer whose reports are counted and ignored provides no blocking check.
 
 ## Fuzzing
 
-libFuzzer, Clang only. One target per parse entry point.
+Fuzzing uses libFuzzer with Clang, with one target per parse entry point.
 
 Use `house_cxx_add_fuzzer` from the [CMake API](../../cxx/README.md), with a
 synthetic parser input and explicit bounds. Prefer forming a span at the entry
-point to spreading pointer arithmetic through the parser. Any unavoidable
-suppression still needs specific approval, a named check and justification.
+point to spreading pointer arithmetic through the parser. The
+[EN-00.4 suppression procedure](../../standard/engineering/00-conformance.md)
+applies to unavoidable suppressions.
 
 Cache the corpus between CI runs. Starting empty every night rediscovers shallow
-states and never reaches the deep ones, which is where the bugs are. Short budget
-on push, long budget on the schedule (`EN-05.4`).
+states and never reaches the deep ones, which is where the bugs are. Fuzzing runs
+with a short budget on push and a long budget on the schedule (`EN-05.4`).
 
 ## Test-tree literals
 
-Literal sizes, offsets and expected values in a test are the case under test, not
-a value shared with production code — hoisting each to a named constant moves the
-expected value away from the assertion that reads it (`EN-04.7`).
+Literal sizes, offsets and expected values define the test case. Giving each
+value a name moves it away from the assertion that uses it (`EN-04.7`).
 
 Do not disable a check just because this is a test directory. Measure the
-findings and fix the design first. A scope disable needs specific approval and
-a matching standing-deviation row naming the tool's exact check, the rule ID in
-the rationale, risk mitigation and review date. Any ceiling increase needs its own approved commit with the reason (EN-00.6).
-Implement the bounded scope configuration only after approval.
-Follow the [deviation procedure](../../standard/engineering/00-conformance.md);
-this guide grants no suppression or budget increase.
+findings and follow the
+[deviation procedure, EN-00.3 to EN-00.6](../../standard/engineering/00-conformance.md).
+Implement the approved scope configuration only after approval. This guide
+grants no suppression or ceiling increase.
 
 Fixture state, stack-owned test doubles and allocation counters still need
 site-specific reasoning; none is a blanket exemption.
@@ -122,14 +118,13 @@ site-specific reasoning; none is a blanket exemption.
 
 `bugprone-unchecked-optional-access` fires on every dereference guarded by
 `ASSERT_TRUE(result.has_value())`. Its dataflow analysis cannot see through the
-GoogleTest macro's early return, and this is not tunable — `.value()` fires
-too, so swapping the accessor does not help.
+GoogleTest macro's early return. That limitation is not tunable, and `.value()`
+also triggers the check.
 
-Suppressing it per site is legal but wrong-headed: an API returning
-`std::optional` is the house idiom, so the suppression recurs on every test of
-every such function and spends the language suppression budget on a tool limitation rather
-than on a real deviation. `EN-00.3` says fix before suppressing, and here there
-is a fix. Guard with a plain `if`, which the analysis does understand:
+A suppression would recur at every test of an API returning `std::optional`,
+using the language's suppression ceiling for a tool limitation. Follow
+[EN-00.3](../../standard/engineering/00-conformance.md). Guard with a plain
+`if`, which the analysis understands:
 
 ```cpp
 const auto value = reader.read_u16();

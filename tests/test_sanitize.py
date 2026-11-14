@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""The generic sanitizer tree preserves declared profile behavior (AR-22)."""
+"""The generic sanitizer tree preserves declared profile behaviour (AR-22)."""
 
 import pytest
 

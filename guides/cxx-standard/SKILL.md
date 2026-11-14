@@ -41,17 +41,15 @@ Chapters load on demand:
 
 ## Where these rules come from
 
-The C++ Core Guidelines for design and safety, the Google style guide for
-formatting only, and CERT C++ for security — each adopted in part, with the
-departures reasoned. The standards repository's README carries the detail,
-including why MISRA's text appears nowhere.
+The rules draw on the C++ Core Guidelines for design and safety, the Google
+style guide for formatting only, and CERT C++ for security. Each is adopted in part.
+The [standard's README](../../standard/README.md) explains the departures and
+the exclusion of MISRA text.
 
-## If you read one rule
+## Diagnostics
 
-**CXX-00.1.** A diagnostic is a defect until shown otherwise. The order of
-preference is: fix the code, then change the design so the rule stops applying,
-then suppress at the site with the rule named and a justification above it. A
-scope-wide disable is a registered standing deviation (`EN-00.5`), never a
-config line added in passing.
+The diagnostic procedure is [CXX-00.1](../../standard/cxx/00-conformance.md),
+including standing deviations under
+[EN-00.5](../../standard/engineering/00-conformance.md).
 
 For review, read the [C++ checklist](../review/checklists/cxx.md).

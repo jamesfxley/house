@@ -26,6 +26,7 @@ failures first and concentrate judgment on what tooling cannot catch.
 | C/C++ | [C++ checklist](checklists/cxx.md) |
 | Python | [Python checklist](checklists/python.md) |
 | Markdown | [Markdown checklist](checklists/markdown.md) |
+| Prose in documents and comments | [Prose checklist](checklists/prose.md) |
 
 A whole-tree review also judges the design against the specification and the
 public consumer experience. Fix its scope before reading and account for each
@@ -38,15 +39,17 @@ No silent coverage gaps and no persistent review ledger.
 Open with mode, scope, finding count and the most severe finding. For each
 finding give severity, rule or contract, file and line, evidence and a concrete
 failure. Distinguish confirmed from plausible reachability. Wrong commands
-precede wrong prose; wrong claims precede omissions. Drop style preferences
-without a concrete failure. An empty review is a valid result.
+precede wrong prose; wrong claims precede omissions. A prose finding names the
+EN-03 rule it breaks and quotes the text. Drop a preference no rule supports.
+An empty review is a valid result.
 
 A source defect needs a failing reproducer before the fix. Check negative tests
-for expected finding text as well as status so a crash cannot satisfy refusal.
-Do not change an existing test's expectation to fit a fix without approval.
-Search everywhere the changed policy applies, including sibling gates. Verify
-every specification, comment and message claim against the tree. Keep the fix
-bounded to the finding; wider cleanup needs a separate decision.
+for expected finding text as well as status so a crash cannot satisfy refusal. A
+crash returning the same status must never satisfy a negative control. Do not
+change an existing test's expectation to fit a fix without approval. Search
+everywhere the changed policy applies, including sibling gates. Verify every
+specification, comment and message claim against the tree. Keep the fix bounded
+to the finding; wider cleanup needs a separate decision.
 
 Review a finding's fix once for introduced defects, then stop the review chain.
 A defect introduced by that fix needs a failing test and a mutation proving the
@@ -57,6 +60,6 @@ remaining unchecked scope in the handoff, without a ledger.
 
 Close by separating ordinary corrections from decisions requiring approval:
 public API, dependency, suppression or deviation, version, destructive changes,
-and conflicting design choices. A report-only audit does not authorize edits.
-Honor authorization already present in the user's request; review is not a new
-approval barrier for ordinary authorized corrections.
+and conflicting design choices. A report-only audit does not authorise edits.
+Honour authorisation already present in the user's request; review is not a new
+approval barrier for ordinary authorised corrections.

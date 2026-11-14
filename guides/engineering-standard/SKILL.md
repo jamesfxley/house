@@ -21,7 +21,7 @@ Chapters load on demand:
 | [01-quality-gates.md](../../standard/engineering/01-quality-gates.md) | Setting up or changing linting, warnings, sanitizers, coverage |
 | [02-spec-and-traceability.md](../../standard/engineering/02-spec-and-traceability.md) | Writing a requirement, citing one from code, or reviewing requirement citations |
 | [03-documentation.md](../../standard/engineering/03-documentation.md) | Writing or restructuring anything in `docs/` |
-| [04-testing.md](../../standard/engineering/04-testing.md) | Adding tests, designing a seam, choosing what to fake |
+| [04-testing.md](../../standard/engineering/04-testing.md) | Adding tests, designing a testable interface, choosing what to fake |
 | [05-ci-shape.md](../../standard/engineering/05-ci-shape.md) | Creating or editing a CI workflow |
 | [06-release-and-versioning.md](../../standard/engineering/06-release-and-versioning.md) | Cutting a release, bumping a version, changing a public API |
 | [07-version-control.md](../../standard/engineering/07-version-control.md) | Naming a branch, writing a commit subject, opening an issue or a pull request |

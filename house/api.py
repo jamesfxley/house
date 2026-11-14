@@ -19,11 +19,11 @@ CONFIG_NAME = re.compile(r"[a-z][a-z0-9_-]*")
 def user_config_dir(name: str) -> Path:
     """Return this user's configuration directory for `name`; never create it.
 
-    The base is, in order: the variable named by CONFIG_HOME_VARIABLE, which must
-    be absolute; on Windows the roaming application-data directory; on macOS the
-    user's Application Support directory; otherwise the XDG base directory when
-    it is set and absolute, else the user's .config directory. `name` is one
-    lowercase path segment. Raises CannotRunError for a refused value.
+    The override named by `CONFIG_HOME_VARIABLE` must be absolute. It takes
+    precedence over the native base: roaming application data on Windows,
+    Application Support on macOS, or the absolute XDG base elsewhere, falling
+    back to the user's `.config` directory. The `name` is one lowercase path
+    segment. An invalid request raises `CannotRunError`.
     """
     if not CONFIG_NAME.fullmatch(name):
         raise CannotRunError(
@@ -105,7 +105,7 @@ class Repo:
 
 
 class Gate(Protocol):
-    # Omitted provider metadata is treated as None for existing extensions.
+    # An extension without provider metadata is treated as repository-wide.
     provider: str | tuple[str, ...] | None
     name: str
     group: str

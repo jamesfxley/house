@@ -23,8 +23,9 @@ fail. Report results; review checks conventions that need judgement.
 | Local design and requirements | `docs/README.md` |
 
 Keep family, device, SDK and machine facts out of shared code and guides; use
-synthetic examples. Guide links enter `standard/` at this pin. Do not copy
-rules into installed dispatchers. Commit subjects name the changed directory
-or dominant area; no trailers. Approval boundaries in the agreements apply.
+synthetic examples. Guide links enter `standard/` at this pin. Do not copy rules
+into installed dispatchers. Commit subjects and trailers follow
+[EN-07.2 and EN-07.4](standard/engineering/07-version-control.md). Approval
+boundaries in the agreements apply.
 
 never create `CLAUDE.md` or `CLAUDE.local.md`

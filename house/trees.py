@@ -131,8 +131,8 @@ AXIS_VALUE = re.compile(r"[A-Za-z0-9_.+-]+")
 def axis_args(repo):
     """Return -D<variable>=<value> for each declared axis the environment selects.
 
-    An axis reaches the check as HOUSE_MATRIX_<AXIS>; one the environment leaves
-    unset or empty sets nothing.
+    An axis is read from `HOUSE_MATRIX_<AXIS>`. An unset or empty variable
+    contributes no argument.
     """
     args = []
     for axis, variable in repo.config.get("ci", {}).get("axes", {}).items():

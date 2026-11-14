@@ -35,7 +35,7 @@ def test_configuration_and_inline_share_one_ceiling(repo, write):
     write("docs/deviation-budget.txt", "python = 1\n")
     assert_fault(repo, Deviations(), "python: 2 exceeds its ceiling of 1")
     write("docs/deviation-budget.txt", "python = 2\n")
-    # Register contents and approval judgements are review, never row parsing.
+    # Review checks register contents and approval; the gate does not parse rows.
     write("docs/deviations.md", "Prose register; no table.\n")
     assert_pass(repo, Deviations())
 

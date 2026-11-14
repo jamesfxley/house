@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Port documentation-example extraction and failure regressions (AR-8)."""
+"""Check documentation-example extraction and failure handling (AR-8)."""
 
 import pytest
 

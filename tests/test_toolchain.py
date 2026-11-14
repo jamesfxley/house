@@ -195,8 +195,8 @@ def test_tool_run_refuses_undeclared_or_missing_tools(declared, monkeypatch):
 
 
 def test_tool_run_finds_private_tools_first(declared, monkeypatch):
-    # AR-11: a tool started by `toolchain run` resolves sibling tools, such as
-    # Ruff under pytest, from the private environment before the host PATH.
+    # A tool started by `toolchain run` finds sibling tools, such as Ruff
+    # under pytest, in the private environment before the host PATH (AR-11).
     found = str(toolchain.executable(declared, "pytest"))
     monkeypatch.setattr(toolchain, "inspect", lambda *_: (found, ""))
     monkeypatch.setenv("PATH", "/host/bin")

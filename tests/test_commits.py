@@ -181,7 +181,7 @@ def test_initial_main_uses_payload_tip_not_current_head(repo, write):
     assert head not in selected_commits(repo, selection, root_head)
 
 
-# AR-5: forced pushes select the created-ref range; ordinary pushes retain before.
+# Forced pushes select the range for a new ref; ordinary pushes keep `before` (AR-5).
 @pytest.mark.parametrize("default_branch", [False, True])
 def test_forced_push_uses_created_ref_range(repo, write, default_branch):
     base, head = history(repo, write)
