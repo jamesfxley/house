@@ -69,10 +69,20 @@ def test_other_axis_values_are_refused_naming_the_choices(
         applicability(repo, "sanitize")
 
 
-def test_axis_without_a_declaration_adds_no_tree(repo, monkeypatch):
+def test_axis_without_a_declaration_adds_no_tree_outside_cxx(repo, monkeypatch):
     monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", "address")
     assert profile_names(repo) == []
     assert [tree.name for tree in trees(repo)] == ["host"]
+
+
+@pytest.mark.parametrize("value", ["address", "thread", "ON"])
+def test_cxx_axis_without_a_declaration_is_refused(repo, monkeypatch, value):
+    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", value)
+    repo.config["house"]["languages"] = ["cxx"]
+    with pytest.raises(CannotRunError, match="HOUSE_MATRIX_SANITIZE"):
+        trees(repo)
+    with pytest.raises(CannotRunError, match="HOUSE_MATRIX_SANITIZE"):
+        applicability(repo, "host")
 
 
 @pytest.mark.parametrize("axis", ["", "address", "thread"])
