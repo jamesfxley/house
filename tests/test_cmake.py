@@ -351,6 +351,7 @@ def test_thread_sanitizer_replaces_address_sanitizer(project):
     )
     line = project.compile_line("app")
     assert "-fsanitize=thread,undefined" in line
+    assert "-fno-sanitize=vptr" in line
     assert "-fsanitize=address" not in line
     assert "-fno-sanitize-recover=all" in line
     assert "-fsanitize=address" not in (project.build / "build.ninja").read_text()
@@ -492,6 +493,56 @@ target_link_libraries(race PRIVATE Threads::Threads)
     )
     assert done.returncode != 0
     assert "WARNING: ThreadSanitizer: data race" in done.stderr
+
+
+def test_address_sanitizer_keeps_the_vptr_check(project):
+    project.configure(
+        "house_cxx_enable_sanitizers(S)\nadd_library(app STATIC unit.cpp)",
+        "-DS_SANITIZE=address",
+    )
+    line = project.compile_line("app")
+    assert "-fsanitize=address,undefined" in line
+    assert "-fno-sanitize=vptr" not in line
+
+
+@pytest.mark.parametrize("names", [("g++",), ("clang++-20", "clang++")])
+def test_thread_sanitizer_passes_joined_threads(project, names):
+    # With UBSan's vptr check, ThreadSanitizer reports a race inside the
+    # standard library's thread-state destructor on most runs.
+    compiler = next(filter(None, map(shutil.which, names)), None)
+    assert compiler, names[0] + " is required for the joined-threads check"
+    project.write(
+        "joined.cpp",
+        """
+#include <thread>
+int main() {
+    for (int i = 0; i < 100; ++i) {
+        std::thread a([] {});
+        std::thread b([] {});
+        a.join();
+        b.join();
+    }
+    return 0;
+}
+""",
+    )
+    body = """
+house_cxx_enable_sanitizers(S)
+find_package(Threads REQUIRED)
+add_executable(joined joined.cpp)
+target_link_libraries(joined PRIVATE Threads::Threads)
+"""
+    project.configure(body, "-DCMAKE_CXX_COMPILER=" + compiler, "-DS_SANITIZE=thread")
+    project.compile()
+    done = subprocess.run(
+        [str(project.build / "joined")],
+        capture_output=True,
+        encoding="utf-8",
+        check=False,
+        env={**os.environ, "TSAN_OPTIONS": "halt_on_error=1"},
+    )
+    assert done.returncode == 0, done.stderr
+    assert "ThreadSanitizer" not in done.stderr
 
 
 def test_version_definitions_obey_requested_visibility(project):

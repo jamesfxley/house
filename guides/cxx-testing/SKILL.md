@@ -79,7 +79,7 @@ registration; this pattern does not grant an exemption.
 
 ```
 -D<PREFIX>_SANITIZE=address    # ASan + UBSan, before creating compiled targets
--D<PREFIX>_SANITIZE=thread     # TSan + UBSan; never combined with ASan
+-D<PREFIX>_SANITIZE=thread     # TSan + UBSan without vptr; never with ASan
 ```
 
 House's `sanitize` tree sets `ASAN_OPTIONS=detect_leaks=1` for `address` and
