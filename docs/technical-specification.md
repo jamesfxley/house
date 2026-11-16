@@ -133,13 +133,14 @@ string `<PREFIX>_SANITIZE`, with the values `OFF` (the default), `address` and
 ThreadSanitizer and UBSan and never with AddressSanitizer. Any other value,
 including `ON`, shall be refused at configuration with a message that names the
 accepted values. `thread` and `<PREFIX>_ENABLE_FUZZERS=ON` shall be refused at
-configuration when either one's instrumentation is already in the other's
-directory scope. The declaration shall register build:sanitize and
-lint:sanitize, enabled only when HOUSE_MATRIX_SANITIZE is `address` or `thread`,
-with Debug last and `-D<PREFIX>_SANITIZE` set to that value. House shall refuse
-any other value of HOUSE_MATRIX_SANITIZE except unset, empty or `OFF`, naming
-the accepted values. In a C++ repository without the declaration, House shall
-refuse every value except unset, empty or `OFF`. The tree environment shall be
+configuration when the compiler supports libFuzzer and either one's
+instrumentation is already in the other's directory scope. The declaration shall
+register build:sanitize and lint:sanitize, enabled only when
+HOUSE_MATRIX_SANITIZE is `address` or `thread`, with Debug last and
+`-D<PREFIX>_SANITIZE` set to that value. House shall refuse any other value of
+HOUSE_MATRIX_SANITIZE except unset, empty or `OFF`, naming the accepted values.
+In a C++ repository without the declaration, House shall refuse every value
+except unset, empty or `OFF`. The tree environment shall be
 `ASAN_OPTIONS=detect_leaks=1` for `address` and `TSAN_OPTIONS=halt_on_error=1`
 for `thread`. GoogleTest shall be refused for every value other than `OFF` until
 sanitizer flags are in scope. A profile with the same declared name is refused.
@@ -170,7 +171,7 @@ The rows name the tests and the criteria below.
 | AR-19 | `test_deviations.py` counts languages, refuses excess counts and old budgets, reports lower ceilings and ratchets atomically; `test_commits.py` accepts independent areas and rejects malformed messages and trailers. |
 | AR-20 | `test_trees_resolve_once_for_all_entries_and_again_next_run` counts one resolution per invocation; the three producer reuse tests in `test_consumer.py` count actual CMake installs and preserve refusal evidence. |
 | AR-21 | `test_sync.py` checks deterministic editor overlays and environment refusal. |
-| AR-22 | `test_sanitize.py` checks disabled values, each accepted value, the refusal of others, the refusal without a declaration in a C++ repository, declarations, prefix, argument order, per-value environment, gate names and collisions. `test_cmake.py` configures real projects for `thread` and requires ThreadSanitizer and no AddressSanitizer flags, refuses other values and `thread` with fuzzers in either order and in a child directory, accepts them in sibling directories and with a compiler without libFuzzer, and runs a racy program that fails with a ThreadSanitizer report. |
+| AR-22 | `test_sanitize.py` checks disabled values, each accepted value, the refusal of others, the refusal without a declaration in a C++ repository, declarations, prefix, argument order, per-value environment, gate names and collisions. `test_cmake.py` configures real projects for `thread` and requires ThreadSanitizer and no AddressSanitizer flags, refuses other values and `thread` with fuzzers in either order and in a child directory, accepts them in sibling directories, with a compiler without libFuzzer and with a thread flag inside an unrelated option, and runs a racy program that fails with a ThreadSanitizer report. |
 
 ### AR-1 verification
 
