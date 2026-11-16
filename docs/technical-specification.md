@@ -170,7 +170,7 @@ The rows name the tests and the criteria below.
 | AR-19 | `test_deviations.py` counts languages, refuses excess counts and old budgets, reports lower ceilings and ratchets atomically; `test_commits.py` accepts independent areas and rejects malformed messages and trailers. |
 | AR-20 | `test_trees_resolve_once_for_all_entries_and_again_next_run` counts one resolution per invocation; the three producer reuse tests in `test_consumer.py` count actual CMake installs and preserve refusal evidence. |
 | AR-21 | `test_sync.py` checks deterministic editor overlays and environment refusal. |
-| AR-22 | `test_sanitize.py` checks disabled values, each accepted value, the refusal of others, the refusal without a declaration in a C++ repository, declarations, prefix, argument order, per-value environment, gate names and collisions. `test_cmake.py` configures real projects for `thread` and requires ThreadSanitizer and no AddressSanitizer flags, refuses other values and `thread` with fuzzers in either order, accepts them in sibling directories, and runs a racy program that fails with a ThreadSanitizer report. |
+| AR-22 | `test_sanitize.py` checks disabled values, each accepted value, the refusal of others, the refusal without a declaration in a C++ repository, declarations, prefix, argument order, per-value environment, gate names and collisions. `test_cmake.py` configures real projects for `thread` and requires ThreadSanitizer and no AddressSanitizer flags, refuses other values and `thread` with fuzzers in either order and in a child directory, accepts them in sibling directories and with a compiler without libFuzzer, and runs a racy program that fails with a ThreadSanitizer report. |
 
 ### AR-1 verification
 
