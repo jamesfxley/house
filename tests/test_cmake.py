@@ -367,6 +367,23 @@ def test_sanitize_values_other_than_the_choices_are_refused(project, value):
     )
 
 
+@pytest.mark.parametrize(
+    "order",
+    [
+        ("house_cxx_enable_sanitizers(S)", "house_cxx_declare_fuzzers_option(S)"),
+        ("house_cxx_declare_fuzzers_option(S)", "house_cxx_enable_sanitizers(S)"),
+    ],
+)
+def test_thread_sanitizer_and_fuzzers_are_refused_in_either_order(project, order):
+    project.configure(
+        "\n".join(("house_cxx_declare_tests_option(S)", *order)),
+        "-DS_SANITIZE=thread",
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+        expected="cannot be combined with ThreadSanitizer",
+    )
+
+
 def test_thread_sanitizer_reports_a_race_as_a_failure(project):
     project.write(
         "race.cpp",
