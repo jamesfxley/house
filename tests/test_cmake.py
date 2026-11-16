@@ -375,12 +375,30 @@ def test_sanitize_values_other_than_the_choices_are_refused(project, value):
     ],
 )
 def test_thread_sanitizer_and_fuzzers_are_refused_in_either_order(project, order):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
     project.configure(
         "\n".join(("house_cxx_declare_tests_option(S)", *order)),
+        "-DCMAKE_CXX_COMPILER=" + compiler,
         "-DS_SANITIZE=thread",
         "-DS_ENABLE_TESTS=ON",
         "-DS_ENABLE_FUZZERS=ON",
         expected="cannot be combined with ThreadSanitizer",
+    )
+
+
+def test_thread_sanitizer_and_fuzzers_in_sibling_directories_configure(project):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    project.write("a/CMakeLists.txt", "house_cxx_enable_sanitizers(A)\n")
+    project.write(
+        "b/CMakeLists.txt",
+        "house_cxx_declare_tests_option(B)\nhouse_cxx_declare_fuzzers_option(B)\n",
+    )
+    project.configure(
+        "add_subdirectory(a)\nadd_subdirectory(b)",
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DA_SANITIZE=thread",
+        "-DB_ENABLE_TESTS=ON",
+        "-DB_ENABLE_FUZZERS=ON",
     )
 
 

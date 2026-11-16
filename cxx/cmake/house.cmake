@@ -396,15 +396,14 @@ macro(house_cxx_enable_sanitizers HOUSE_CXX_ARG_PREFIX)
                 "for a build that checked nothing")
         endif()
         if(HOUSE_CXX_SANITIZE_CHOICE STREQUAL "thread")
-            get_property(HOUSE_CXX_SANITIZE_FUZZ GLOBAL PROPERTY
-                         HOUSE_CXX_FUZZERS_ENABLED)
-            if(HOUSE_CXX_SANITIZE_FUZZ)
+            get_directory_property(HOUSE_CXX_SANITIZE_DIR_OPTS COMPILE_OPTIONS)
+            if(HOUSE_CXX_SANITIZE_DIR_OPTS MATCHES "-fsanitize=fuzzer-no-link")
                 message(FATAL_ERROR
                     "${HOUSE_CXX_ARG_PREFIX}_SANITIZE is thread but fuzzers are "
-                    "enabled; fuzz targets build with AddressSanitizer, which "
-                    "cannot be combined with ThreadSanitizer.")
+                    "enabled in this directory; fuzz targets build with "
+                    "AddressSanitizer, which cannot be combined with "
+                    "ThreadSanitizer.")
             endif()
-            set_property(GLOBAL PROPERTY HOUSE_CXX_THREAD_SANITIZER TRUE)
             set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=thread,undefined)
         else()
             set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=address,undefined)
@@ -982,16 +981,14 @@ macro(house_cxx_declare_fuzzers_option HOUSE_CXX_ARG_PREFIX)
             "the test tree.")
     endif()
     if(${HOUSE_CXX_ARG_PREFIX}_ENABLE_FUZZERS)
-        get_property(HOUSE_CXX_FZ_THREAD GLOBAL PROPERTY
-                     HOUSE_CXX_THREAD_SANITIZER)
-        if(HOUSE_CXX_FZ_THREAD)
+        get_directory_property(HOUSE_CXX_FZ_DIR_OPTS COMPILE_OPTIONS)
+        if(HOUSE_CXX_FZ_DIR_OPTS MATCHES "-fsanitize=thread")
             message(FATAL_ERROR
                 "${HOUSE_CXX_ARG_PREFIX}_ENABLE_FUZZERS is ON but the thread "
-                "sanitizer is selected; fuzz targets build with "
+                "sanitizer is in scope; fuzz targets build with "
                 "AddressSanitizer, which cannot be combined with "
                 "ThreadSanitizer.")
         endif()
-        set_property(GLOBAL PROPERTY HOUSE_CXX_FUZZERS_ENABLED TRUE)
         _house_cxx_probe_fuzzer()
     endif()
     if(${HOUSE_CXX_ARG_PREFIX}_ENABLE_FUZZERS AND HOUSE_CXX_HAS_FUZZER)
