@@ -376,6 +376,7 @@ def test_sanitize_values_other_than_the_choices_are_refused(project, value):
 )
 def test_thread_sanitizer_and_fuzzers_are_refused_in_either_order(project, order):
     compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
     project.configure(
         "\n".join(("house_cxx_declare_tests_option(S)", *order)),
         "-DCMAKE_CXX_COMPILER=" + compiler,
@@ -388,6 +389,7 @@ def test_thread_sanitizer_and_fuzzers_are_refused_in_either_order(project, order
 
 def test_thread_sanitizer_and_fuzzers_in_sibling_directories_configure(project):
     compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
     project.write("a/CMakeLists.txt", "house_cxx_enable_sanitizers(A)\n")
     project.write(
         "b/CMakeLists.txt",
@@ -399,6 +401,50 @@ def test_thread_sanitizer_and_fuzzers_in_sibling_directories_configure(project):
         "-DA_SANITIZE=thread",
         "-DB_ENABLE_TESTS=ON",
         "-DB_ENABLE_FUZZERS=ON",
+    )
+
+
+@pytest.mark.parametrize(
+    ("parent", "child"),
+    [
+        ("house_cxx_enable_sanitizers(S)", "house_cxx_declare_fuzzers_option(S)"),
+        ("house_cxx_declare_fuzzers_option(S)", "house_cxx_enable_sanitizers(S)"),
+    ],
+)
+def test_thread_sanitizer_and_fuzzers_are_refused_in_a_child_directory(
+    project, parent, child,
+):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
+    project.write("child/CMakeLists.txt", child + "\n")
+    project.configure(
+        f"house_cxx_declare_tests_option(S)\n{parent}\nadd_subdirectory(child)",
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_SANITIZE=thread",
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+        expected="cannot be combined with ThreadSanitizer",
+    )
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        ("house_cxx_enable_sanitizers(S)", "house_cxx_declare_fuzzers_option(S)"),
+        ("house_cxx_declare_fuzzers_option(S)", "house_cxx_enable_sanitizers(S)"),
+    ],
+)
+def test_thread_sanitizer_with_unavailable_fuzzers_configures_in_either_order(
+    project, order,
+):
+    compiler = shutil.which("g++")
+    assert compiler, "g++ is required: it has no libFuzzer"
+    project.configure(
+        "\n".join(("house_cxx_declare_tests_option(S)", *order)),
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_SANITIZE=thread",
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
     )
 
 

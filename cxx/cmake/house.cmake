@@ -397,10 +397,10 @@ macro(house_cxx_enable_sanitizers HOUSE_CXX_ARG_PREFIX)
         endif()
         if(HOUSE_CXX_SANITIZE_CHOICE STREQUAL "thread")
             get_directory_property(HOUSE_CXX_SANITIZE_DIR_OPTS COMPILE_OPTIONS)
-            if(HOUSE_CXX_SANITIZE_DIR_OPTS MATCHES "-fsanitize=fuzzer-no-link")
+            if(HOUSE_CXX_SANITIZE_DIR_OPTS MATCHES "(^|;)-fsanitize=fuzzer-no-link")
                 message(FATAL_ERROR
-                    "${HOUSE_CXX_ARG_PREFIX}_SANITIZE is thread but fuzzers are "
-                    "enabled in this directory; fuzz targets build with "
+                    "${HOUSE_CXX_ARG_PREFIX}_SANITIZE is thread but fuzzer "
+                    "instrumentation is in scope; fuzz targets build with "
                     "AddressSanitizer, which cannot be combined with "
                     "ThreadSanitizer.")
             endif()
@@ -981,15 +981,16 @@ macro(house_cxx_declare_fuzzers_option HOUSE_CXX_ARG_PREFIX)
             "the test tree.")
     endif()
     if(${HOUSE_CXX_ARG_PREFIX}_ENABLE_FUZZERS)
+        _house_cxx_probe_fuzzer()
         get_directory_property(HOUSE_CXX_FZ_DIR_OPTS COMPILE_OPTIONS)
-        if(HOUSE_CXX_FZ_DIR_OPTS MATCHES "-fsanitize=thread")
+        if(HOUSE_CXX_HAS_FUZZER
+           AND HOUSE_CXX_FZ_DIR_OPTS MATCHES "(^|;)-fsanitize=thread")
             message(FATAL_ERROR
                 "${HOUSE_CXX_ARG_PREFIX}_ENABLE_FUZZERS is ON but the thread "
                 "sanitizer is in scope; fuzz targets build with "
                 "AddressSanitizer, which cannot be combined with "
                 "ThreadSanitizer.")
         endif()
-        _house_cxx_probe_fuzzer()
     endif()
     if(${HOUSE_CXX_ARG_PREFIX}_ENABLE_FUZZERS AND HOUSE_CXX_HAS_FUZZER)
         get_property(HOUSE_CXX_FZ_EXISTING DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
