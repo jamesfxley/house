@@ -399,7 +399,11 @@ file by default. Family init keeps the repository's instructions and refers to
 the table. The environment comes from `python3 dev.py toolchain install`.
 
 A `house_cxx_enable_sanitizers(PREFIX)` call declares the built-in `sanitize`
-tree, enabled only by `HOUSE_MATRIX_SANITIZE=ON`. It adds Debug after the normal
-build-type arguments, `<PREFIX>_SANITIZE=ON`, and `ASAN_OPTIONS=detect_leaks=1`.
+tree, enabled only when `HOUSE_MATRIX_SANITIZE` is `address` or `thread`; any
+other value except unset, empty or `OFF` is refused. The tree adds Debug after
+the normal build-type arguments and `<PREFIX>_SANITIZE=<value>`, with
+`ASAN_OPTIONS=detect_leaks=1` for `address` or `TSAN_OPTIONS=halt_on_error=1` for
+`thread`. `<PREFIX>_SANITIZE` is `OFF`, `address` or `thread`; other values,
+including `ON`, fail at configuration.
 The per-tree checks are `build:sanitize` and `lint:sanitize`; a declared profile
 with the same name is refused.

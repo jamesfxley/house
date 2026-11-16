@@ -371,14 +371,22 @@ endfunction()
 
 macro(house_cxx_enable_sanitizers HOUSE_CXX_ARG_PREFIX)
     _house_cxx_no_extra_arguments("house_cxx_enable_sanitizers" ${ARGN})
-    option(${HOUSE_CXX_ARG_PREFIX}_SANITIZE
-           "Build host targets with AddressSanitizer + UBSan" OFF)
-    if(${HOUSE_CXX_ARG_PREFIX}_SANITIZE)
+    set(${HOUSE_CXX_ARG_PREFIX}_SANITIZE OFF CACHE STRING
+        "Host sanitizer: OFF, address (AddressSanitizer + UBSan) or thread (ThreadSanitizer + UBSan)")
+    set_property(CACHE ${HOUSE_CXX_ARG_PREFIX}_SANITIZE PROPERTY STRINGS
+                 OFF address thread)
+    set(HOUSE_CXX_SANITIZE_CHOICE "${${HOUSE_CXX_ARG_PREFIX}_SANITIZE}")
+    if(NOT HOUSE_CXX_SANITIZE_CHOICE MATCHES "^(OFF|address|thread)$")
+        message(FATAL_ERROR
+            "${HOUSE_CXX_ARG_PREFIX}_SANITIZE must be OFF, address or thread, "
+            "not '${HOUSE_CXX_SANITIZE_CHOICE}'")
+    endif()
+    if(NOT HOUSE_CXX_SANITIZE_CHOICE STREQUAL "OFF")
         if(CMAKE_CROSSCOMPILING)
             message(FATAL_ERROR
-                "${HOUSE_CXX_ARG_PREFIX}_SANITIZE is ON in a cross-compiling build. "
-                "This helper supports sanitizing the "
-                "host tree instead.")
+                "${HOUSE_CXX_ARG_PREFIX}_SANITIZE is ${HOUSE_CXX_SANITIZE_CHOICE} "
+                "in a cross-compiling build. This helper supports sanitizing "
+                "the host tree instead.")
         endif()
         if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
                 OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
@@ -387,9 +395,14 @@ macro(house_cxx_enable_sanitizers HOUSE_CXX_ARG_PREFIX)
                 "sanitizer support here; a silent skip would report a green run "
                 "for a build that checked nothing")
         endif()
-        add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer
+        if(HOUSE_CXX_SANITIZE_CHOICE STREQUAL "thread")
+            set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=thread,undefined)
+        else()
+            set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=address,undefined)
+        endif()
+        add_compile_options(${HOUSE_CXX_SANITIZE_FLAG} -fno-omit-frame-pointer
                             -fno-sanitize-recover=all)
-        add_link_options(-fsanitize=address,undefined)
+        add_link_options(${HOUSE_CXX_SANITIZE_FLAG})
         set_property(GLOBAL PROPERTY HOUSE_CXX_SANITIZERS_APPLIED TRUE)
     endif()
 endmacro()
@@ -412,15 +425,25 @@ macro(house_cxx_enable_gtest)
             if(NOT HOUSE_CXX_GTEST_VAR MATCHES "_SANITIZE$")
                 continue()
             endif()
-            if("${${HOUSE_CXX_GTEST_VAR}}")
-                message(FATAL_ERROR
-                    "house_cxx_enable_gtest: ${HOUSE_CXX_GTEST_VAR} is ON but "
-                    "no sanitizer flags are in scope yet. Call "
-                    "house_cxx_enable_sanitizers() before this macro, or the "
-                    "fetched GoogleTest is compiled uninstrumented and ASan's "
-                    "container-overflow detector reports false positives "
-                    "against it.")
+            set(HOUSE_CXX_GTEST_VALUE "${${HOUSE_CXX_GTEST_VAR}}")
+            if(HOUSE_CXX_GTEST_VALUE STREQUAL "thread")
+                set(HOUSE_CXX_GTEST_REASON
+                    "the fetched GoogleTest is compiled uninstrumented and "
+                    "ThreadSanitizer reports false races against it.")
+            elseif(HOUSE_CXX_GTEST_VALUE STREQUAL "address"
+                   OR HOUSE_CXX_GTEST_VALUE)
+                set(HOUSE_CXX_GTEST_REASON
+                    "the fetched GoogleTest is compiled uninstrumented and "
+                    "AddressSanitizer's container-overflow detector reports "
+                    "false positives against it.")
+            else()
+                continue()
             endif()
+            message(FATAL_ERROR
+                "house_cxx_enable_gtest: ${HOUSE_CXX_GTEST_VAR} is "
+                "${HOUSE_CXX_GTEST_VALUE} but no sanitizer flags are in scope "
+                "yet. Call house_cxx_enable_sanitizers() before this macro, or "
+                "${HOUSE_CXX_GTEST_REASON}")
         endforeach()
     endif()
 
