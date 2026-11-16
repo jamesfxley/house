@@ -71,7 +71,8 @@ The included module defines helpers without acting until called. Run common
 settings after `project()`, sanitizer setup before compiled targets and
 GoogleTest, then create libraries and tests. Host sanitizer setup takes `OFF`,
 `address` or `thread` and refuses cross-compilation. Use
-[cxx-testing](../cxx-testing/SKILL.md) for fixtures and per-module tests. Use explicit documentation groups and caller-supplied names.
+[cxx-testing](../cxx-testing/SKILL.md) for fixtures and per-module tests. Use
+explicit documentation groups and caller-supplied names.
 
 Link diagnostic targets privately. A target compiling third-party sources uses
 the API's explicit vendor-source path; apply `house_cxx_werror_sources` to owned
