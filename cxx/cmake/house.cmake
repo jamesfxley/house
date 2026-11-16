@@ -372,7 +372,7 @@ endfunction()
 macro(house_cxx_enable_sanitizers HOUSE_CXX_ARG_PREFIX)
     _house_cxx_no_extra_arguments("house_cxx_enable_sanitizers" ${ARGN})
     set(${HOUSE_CXX_ARG_PREFIX}_SANITIZE OFF CACHE STRING
-        "Host sanitizer: OFF, address (AddressSanitizer + UBSan) or thread (ThreadSanitizer + UBSan)")
+        "Host sanitizer: OFF, address (AddressSanitizer + UBSan) or thread (ThreadSanitizer + UBSan without vptr)")
     set_property(CACHE ${HOUSE_CXX_ARG_PREFIX}_SANITIZE PROPERTY STRINGS
                  OFF address thread)
     set(HOUSE_CXX_SANITIZE_CHOICE "${${HOUSE_CXX_ARG_PREFIX}_SANITIZE}")
@@ -404,7 +404,11 @@ macro(house_cxx_enable_sanitizers HOUSE_CXX_ARG_PREFIX)
                     "AddressSanitizer, which cannot be combined with "
                     "ThreadSanitizer.")
             endif()
-            set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=thread,undefined)
+            # With UBSan's vptr check, ThreadSanitizer reports a race in the
+            # standard library's thread-state destructor on most runs of a
+            # program that joins threads. The address build keeps the check.
+            set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=thread,undefined
+                -fno-sanitize=vptr)
         else()
             set(HOUSE_CXX_SANITIZE_FLAG -fsanitize=address,undefined)
         endif()
