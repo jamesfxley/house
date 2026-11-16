@@ -400,11 +400,12 @@ the table. The environment comes from `python3 dev.py toolchain install`.
 
 A `house_cxx_enable_sanitizers(PREFIX)` call declares the built-in `sanitize`
 tree, enabled only when `HOUSE_MATRIX_SANITIZE` is `address` or `thread`; any
-other value except unset, empty or `OFF` is refused. A C++ repository without
-the call refuses every value except unset, empty or `OFF`. The tree adds Debug
-after the normal build-type arguments and `<PREFIX>_SANITIZE=<value>`, with
-`ASAN_OPTIONS=detect_leaks=1` for `address` or `TSAN_OPTIONS=halt_on_error=1`
-for `thread`. `<PREFIX>_SANITIZE` is `OFF`, `address` or `thread`; other
-values, including `ON`, and `thread` with fuzzers enabled fail at
-configuration. The per-tree checks are `build:sanitize` and `lint:sanitize`; a declared profile
-with the same name is refused.
+other value except unset, empty or `OFF` is refused. In a C++ repository
+without the call, House refuses every value except unset, empty or `OFF`. The
+tree adds Debug after the normal build-type arguments and
+`<PREFIX>_SANITIZE=<value>`, with `ASAN_OPTIONS=detect_leaks=1` for `address`
+or `TSAN_OPTIONS=halt_on_error=1` for `thread`. `<PREFIX>_SANITIZE` is `OFF`,
+`address` or `thread`; other values, including `ON`, fail at configuration, as
+does `thread` where fuzzer instrumentation is in scope. The per-tree checks are
+`build:sanitize` and `lint:sanitize`; a declared profile with the same name is
+refused.
