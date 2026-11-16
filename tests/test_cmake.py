@@ -448,6 +448,18 @@ def test_thread_sanitizer_with_unavailable_fuzzers_configures_in_either_order(
     )
 
 
+def test_thread_in_an_unrelated_option_does_not_refuse_fuzzers(project):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
+    project.configure(
+        "add_compile_options($<$<CONFIG:Never>:-fsanitize=thread>)\n"
+        "house_cxx_declare_tests_option(S)\nhouse_cxx_declare_fuzzers_option(S)",
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+    )
+
+
 def test_thread_sanitizer_reports_a_race_as_a_failure(project):
     project.write(
         "race.cpp",
