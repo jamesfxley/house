@@ -8,7 +8,7 @@ from house.registry import builtin
 from house.trees import applicability, configure_args, profile_names, trees
 
 
-@pytest.mark.parametrize("value", [None, "", "OFF", "on", "1", "TRUE"])
+@pytest.mark.parametrize("value", [None, "", "OFF"])
 def test_sanitize_is_declared_but_disabled_without_the_axis(
     repo, write, monkeypatch, value,
 ):
@@ -24,16 +24,28 @@ def test_sanitize_is_declared_but_disabled_without_the_axis(
     assert {gate.name for gate in builtin(repo)} >= {"build:sanitize", "lint:sanitize"}
 
 
-def test_sanitize_uses_the_macro_prefix_and_debug_wins(repo, write, monkeypatch):
+@pytest.mark.parametrize(
+    ("value", "env"),
+    [
+        ("address", {"ASAN_OPTIONS": "detect_leaks=1"}),
+        ("thread", {"TSAN_OPTIONS": "halt_on_error=1"}),
+    ],
+)
+def test_sanitize_uses_the_macro_prefix_and_debug_wins(
+    repo, write, monkeypatch, value, env,
+):
     write("CMakeLists.txt", "house_cxx_enable_sanitizers(SAMPLE_LIBRARY)\n")
-    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", "ON")
+    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", value)
     monkeypatch.setenv("BUILD_TYPE", "Release")
     repo.config["house"]["languages"] = ["cxx"]
     host, tree = trees(repo)
     assert host.name == "host"
     assert tree.name == "sanitize"
-    assert tree.args == ("-DCMAKE_BUILD_TYPE=Debug", "-DSAMPLE_LIBRARY_SANITIZE=ON")
-    assert tree.env == {"ASAN_OPTIONS": "detect_leaks=1"}
+    assert tree.args == (
+        "-DCMAKE_BUILD_TYPE=Debug",
+        f"-DSAMPLE_LIBRARY_SANITIZE={value}",
+    )
+    assert tree.env == env
     assert applicability(repo, "sanitize") is True
     kinds = [
         arg
@@ -43,13 +55,37 @@ def test_sanitize_uses_the_macro_prefix_and_debug_wins(repo, write, monkeypatch)
     assert kinds == ["-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_BUILD_TYPE=Debug"]
 
 
-def test_axis_without_a_declaration_adds_no_tree(repo, monkeypatch):
-    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", "ON")
+@pytest.mark.parametrize("value", ["ON", "on", "1", "TRUE", "Thread", "address,thread"])
+def test_other_axis_values_are_refused_naming_the_choices(
+    repo, write, monkeypatch, value,
+):
+    write("CMakeLists.txt", "house_cxx_enable_sanitizers(SAMPLE)\n")
+    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", value)
+    repo.config["house"]["languages"] = ["cxx"]
+    message = "HOUSE_MATRIX_SANITIZE must be address or thread, not"
+    with pytest.raises(CannotRunError, match=message):
+        trees(repo)
+    with pytest.raises(CannotRunError, match=message):
+        applicability(repo, "sanitize")
+
+
+def test_axis_without_a_declaration_adds_no_tree_outside_cxx(repo, monkeypatch):
+    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", "address")
     assert profile_names(repo) == []
     assert [tree.name for tree in trees(repo)] == ["host"]
 
 
-@pytest.mark.parametrize("axis", ["", "ON"])
+@pytest.mark.parametrize("value", ["address", "thread", "ON"])
+def test_cxx_axis_without_a_declaration_is_refused(repo, monkeypatch, value):
+    monkeypatch.setenv("HOUSE_MATRIX_SANITIZE", value)
+    repo.config["house"]["languages"] = ["cxx"]
+    with pytest.raises(CannotRunError, match="HOUSE_MATRIX_SANITIZE"):
+        trees(repo)
+    with pytest.raises(CannotRunError, match="HOUSE_MATRIX_SANITIZE"):
+        applicability(repo, "host")
+
+
+@pytest.mark.parametrize("axis", ["", "address", "thread"])
 def test_macro_and_explicit_sanitize_name_are_duplicates(
     repo, write, monkeypatch, axis,
 ):

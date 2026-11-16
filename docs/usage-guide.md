@@ -44,6 +44,6 @@ matrices, schedules and exact coverage checks.
 
 The [configuration reference](../README.md) describes the optional devcontainer
 sync overlay and family routes. `house_cxx_enable_sanitizers(PREFIX)` declares
-House's sanitize tree; set `HOUSE_MATRIX_SANITIZE=ON` to run build:sanitize and
-lint:sanitize with Debug and leak detection. Standalone environments use
-`python3 dev.py toolchain install`.
+House's sanitize tree; set `HOUSE_MATRIX_SANITIZE=address` or `thread` to run
+build:sanitize and lint:sanitize with Debug and that sanitizer. Standalone
+environments use `python3 dev.py toolchain install`.

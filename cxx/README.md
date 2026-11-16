@@ -50,7 +50,7 @@ retain their explicit versions and `find_package` compatibility checks.
 | `house_cxx_common_settings(<freestanding>)` | C11/C++20, compile commands, PIC on hosted builds; explicit freestanding mode permits C extensions and turns PIC off |
 | `house_cxx_add_strict_target(<name> [LANGUAGES C CXX] [FREESTANDING ON/OFF] [VENDOR_SOURCES ON/OFF] [WERROR ON/OFF])` | Interface diagnostics and hardening; WERROR and VENDOR_SOURCES are mutually exclusive; freestanding defaults to cross-compiling |
 | `house_cxx_werror_sources(<sources>...)` | Append source-scoped Werror; refuse missing paths, accept generated and binary-directory sources |
-| `house_cxx_enable_sanitizers(<prefix>)` | Prefix_SANITIZE controls directory-scope ASan/UBSan before targets; cross-compiling is refused |
+| `house_cxx_enable_sanitizers(<prefix>)` | Prefix_SANITIZE (`OFF`, `address` or `thread`) selects directory-scope ASan/UBSan or TSan/UBSan before targets; other values, cross-compiling and, where the compiler supports libFuzzer, `thread` with fuzzers in scope are refused |
 | `house_cxx_enable_gtest()` | Enable CTest and GoogleTest as described below |
 | `house_cxx_add_module_test(<package> <module> SOURCES ... [NAME ...] [LIBRARIES ...])` | Link package strict/module targets and GTest; discover individual cases with a package test prefix |
 | `house_cxx_add_fuzzer(<name> PACKAGE ... SOURCE ... [LIBRARIES ...] [OUTPUT_DIR ...] [CORPUS <dir>] [RUNS <n>])` | Option-controlled strict fuzz entry point, default build/fuzzers output, and a bounded CTest run over the seed corpus |

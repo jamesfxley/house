@@ -75,15 +75,37 @@ def profile_names(repo):
     return names
 
 
+SANITIZERS = {
+    "address": {"ASAN_OPTIONS": "detect_leaks=1"},
+    "thread": {"TSAN_OPTIONS": "halt_on_error=1"},
+}
+
+
+def sanitizer_choice(repo):
+    declared = sanitize_prefix(repo)
+    if not declared and "cxx" not in repo.config["house"]["languages"]:
+        return None
+    value = os.environ.get("HOUSE_MATRIX_SANITIZE", "")
+    if value in {"", "OFF"}:
+        return None
+    if value not in SANITIZERS:
+        raise CannotRunError(
+            f"HOUSE_MATRIX_SANITIZE must be address or thread, not {value!r}",
+        )
+    if not declared:
+        raise CannotRunError(
+            f"HOUSE_MATRIX_SANITIZE is {value!r} but CMakeLists.txt does not "
+            "call house_cxx_enable_sanitizers()",
+        )
+    return value
+
+
 def applicability(repo, name):
     if "cxx" not in repo.config["house"]["languages"]:
         return "no C++ provider declared"
+    choice = sanitizer_choice(repo)
     if name == "sanitize" and sanitize_prefix(repo):
-        return (
-            True
-            if os.environ.get("HOUSE_MATRIX_SANITIZE") == "ON"
-            else ("tree sanitize disabled")
-        )
+        return True if choice else "tree sanitize disabled"
     if name == "host" or (name == "fuzz" and fuzz_prefix(repo)):
         return True
     return (
@@ -98,12 +120,13 @@ def trees(repo):
     prefix = sanitize_prefix(repo)
     if prefix and any(tree["name"] == "sanitize" for tree in repo.config["trees"]):
         raise CannotRunError("duplicate host, fuzz or declared tree name")
-    if prefix and os.environ.get("HOUSE_MATRIX_SANITIZE") == "ON":
+    choice = sanitizer_choice(repo)
+    if choice:
         found.append(
             Tree(
                 "sanitize",
-                ("-DCMAKE_BUILD_TYPE=Debug", f"-D{prefix}_SANITIZE=ON"),
-                {"ASAN_OPTIONS": "detect_leaks=1"},
+                ("-DCMAKE_BUILD_TYPE=Debug", f"-D{prefix}_SANITIZE={choice}"),
+                dict(SANITIZERS[choice]),
             ),
         )
     prefix = fuzz_prefix(repo)

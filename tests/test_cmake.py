@@ -2,8 +2,10 @@
 """Check the CMake language helpers for regressions (AR-8)."""
 
 import json
+import os
 import re
 import shutil
+import subprocess
 
 import pytest
 
@@ -337,9 +339,159 @@ message(STATUS "tests=${S_ENABLE_TESTS}")
     assert "tests=OFF" in output
     project.configure(
         "set(CMAKE_CROSSCOMPILING ON)\nhouse_cxx_enable_sanitizers(S)",
-        "-DS_SANITIZE=ON",
+        "-DS_SANITIZE=address",
         expected="cross-compiling build",
     )
+
+
+def test_thread_sanitizer_replaces_address_sanitizer(project):
+    project.configure(
+        "house_cxx_enable_sanitizers(S)\nadd_library(app STATIC unit.cpp)",
+        "-DS_SANITIZE=thread",
+    )
+    line = project.compile_line("app")
+    assert "-fsanitize=thread,undefined" in line
+    assert "-fsanitize=address" not in line
+    assert "-fno-sanitize-recover=all" in line
+    assert "-fsanitize=address" not in (project.build / "build.ninja").read_text()
+
+
+@pytest.mark.parametrize(
+    "value", ["ON", "on", "1", "TRUE", "", "address,thread", "Thread"],
+)
+def test_sanitize_values_other_than_the_choices_are_refused(project, value):
+    project.configure(
+        "house_cxx_enable_sanitizers(S)",
+        f"-DS_SANITIZE={value}",
+        expected="S_SANITIZE must be OFF, address or thread",
+    )
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        ("house_cxx_enable_sanitizers(S)", "house_cxx_declare_fuzzers_option(S)"),
+        ("house_cxx_declare_fuzzers_option(S)", "house_cxx_enable_sanitizers(S)"),
+    ],
+)
+def test_thread_sanitizer_and_fuzzers_are_refused_in_either_order(project, order):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
+    project.configure(
+        "\n".join(("house_cxx_declare_tests_option(S)", *order)),
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_SANITIZE=thread",
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+        expected="cannot be combined with ThreadSanitizer",
+    )
+
+
+def test_thread_sanitizer_and_fuzzers_in_sibling_directories_configure(project):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
+    project.write("a/CMakeLists.txt", "house_cxx_enable_sanitizers(A)\n")
+    project.write(
+        "b/CMakeLists.txt",
+        "house_cxx_declare_tests_option(B)\nhouse_cxx_declare_fuzzers_option(B)\n",
+    )
+    project.configure(
+        "add_subdirectory(a)\nadd_subdirectory(b)",
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DA_SANITIZE=thread",
+        "-DB_ENABLE_TESTS=ON",
+        "-DB_ENABLE_FUZZERS=ON",
+    )
+
+
+@pytest.mark.parametrize(
+    ("parent", "child"),
+    [
+        ("house_cxx_enable_sanitizers(S)", "house_cxx_declare_fuzzers_option(S)"),
+        ("house_cxx_declare_fuzzers_option(S)", "house_cxx_enable_sanitizers(S)"),
+    ],
+)
+def test_thread_sanitizer_and_fuzzers_are_refused_in_a_child_directory(
+    project, parent, child,
+):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
+    project.write("child/CMakeLists.txt", child + "\n")
+    project.configure(
+        f"house_cxx_declare_tests_option(S)\n{parent}\nadd_subdirectory(child)",
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_SANITIZE=thread",
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+        expected="cannot be combined with ThreadSanitizer",
+    )
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        ("house_cxx_enable_sanitizers(S)", "house_cxx_declare_fuzzers_option(S)"),
+        ("house_cxx_declare_fuzzers_option(S)", "house_cxx_enable_sanitizers(S)"),
+    ],
+)
+def test_thread_sanitizer_with_unavailable_fuzzers_configures_in_either_order(
+    project, order,
+):
+    compiler = shutil.which("g++")
+    assert compiler, "g++ is required: it has no libFuzzer"
+    project.configure(
+        "\n".join(("house_cxx_declare_tests_option(S)", *order)),
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_SANITIZE=thread",
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+    )
+
+
+def test_thread_in_an_unrelated_option_does_not_refuse_fuzzers(project):
+    compiler = shutil.which("clang++-20") or shutil.which("clang++")
+    assert compiler, "clang++ is required for the real fuzzer regression"
+    project.configure(
+        "add_compile_options($<$<CONFIG:Never>:-fsanitize=thread>)\n"
+        "house_cxx_declare_tests_option(S)\nhouse_cxx_declare_fuzzers_option(S)",
+        "-DCMAKE_CXX_COMPILER=" + compiler,
+        "-DS_ENABLE_TESTS=ON",
+        "-DS_ENABLE_FUZZERS=ON",
+    )
+
+
+def test_thread_sanitizer_reports_a_race_as_a_failure(project):
+    project.write(
+        "race.cpp",
+        """
+#include <thread>
+int shared = 0;
+int main() {
+    std::thread a([] { for (int i = 0; i < 100000; ++i) { ++shared; } });
+    std::thread b([] { for (int i = 0; i < 100000; ++i) { ++shared; } });
+    a.join();
+    b.join();
+    return 0;
+}
+""",
+    )
+    body = """
+house_cxx_enable_sanitizers(S)
+find_package(Threads REQUIRED)
+add_executable(race race.cpp)
+target_link_libraries(race PRIVATE Threads::Threads)
+"""
+    project.configure(body, "-DS_SANITIZE=thread")
+    project.compile()
+    done = subprocess.run(
+        [str(project.build / "race")],
+        capture_output=True,
+        encoding="utf-8",
+        check=False,
+        env={**os.environ, "TSAN_OPTIONS": "halt_on_error=1"},
+    )
+    assert done.returncode != 0
+    assert "WARNING: ThreadSanitizer: data race" in done.stderr
 
 
 def test_version_definitions_obey_requested_visibility(project):
@@ -368,7 +520,7 @@ house_cxx_enable_sanitizers(S)
 add_subdirectory(child)
 add_executable(app unit.cpp)
 """,
-        "-DS_SANITIZE=ON",
+        "-DS_SANITIZE=address",
     )
     assert "-fsanitize=address,undefined" in project.compile_line("app")
     assert "-fno-sanitize-recover=all" in project.compile_line("child")
@@ -387,7 +539,8 @@ add_library(GTest::gtest_main ALIAS gtest_main)
 house_cxx_enable_gtest()
 house_cxx_enable_sanitizers(S)
 """
-    project.configure(configure, "-DS_SANITIZE=ON", expected="before this macro")
+    project.configure(configure, "-DS_SANITIZE=address", expected="before this macro")
+    project.configure(configure, "-DS_SANITIZE=thread", expected="before this macro")
     # Existing framework targets exercise ordering without downloading a framework.
     body = """
 add_subdirectory(framework)

@@ -78,12 +78,15 @@ registration; this pattern does not grant an exemption.
 ## Sanitizers
 
 ```
--D<PREFIX>_SANITIZE=ON    # ASan + UBSan, before creating compiled targets
+-D<PREFIX>_SANITIZE=address    # ASan + UBSan, before creating compiled targets
+-D<PREFIX>_SANITIZE=thread     # TSan + UBSan; never combined with ASan
 ```
 
-House's `sanitize` tree sets `ASAN_OPTIONS=detect_leaks=1` and compiles with
+House's `sanitize` tree sets `ASAN_OPTIONS=detect_leaks=1` for `address` and
+`TSAN_OPTIONS=halt_on_error=1` for `thread`, and compiles with
 `-fno-sanitize-recover=all`, so undefined behaviour fails at the report rather
-than continuing. Any `UBSAN_OPTIONS` setting is the CI author's choice.
+than continuing. Run threaded tests under `thread` (CXX-08.1). Any
+`UBSAN_OPTIONS` setting is the CI author's choice.
 A sanitizer whose reports are counted and ignored provides no blocking check.
 
 ## Fuzzing
