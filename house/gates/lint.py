@@ -1,11 +1,25 @@
 # SPDX-License-Identifier: MIT
 """Run provider linters only over this checkout's owned indexed sources."""
 
+import os
+
 from house.api import Finding, Result
+from house.core import CannotRunError
 from house.gates.clang_tidy import tidy
 from house.gates.common import Always, no_args, verdict
 from house.tools import diagnostic, owned, platform, ruff, run, warning
-from house.trees import applicability
+from house.trees import applicability, profile_names
+
+# A matrix cell names the one lint gate it runs; `all` is the tree-less gate.
+SELECTION = "HOUSE_MATRIX_LINT_TREE"
+
+
+def selections(repo):
+    """Return the values SELECTION may take: `all` and each C++ lint tree."""
+    names = ["all"]
+    if "cxx" in repo.config["house"]["languages"]:
+        names.extend(profile_names(repo))
+    return names
 
 
 def python_lint(repo):
@@ -39,6 +53,21 @@ class Lint(Always):
         self.tree = tree
         self.configuration = tree or "all"
         self.name = "lint:" + tree if tree else "lint"
+
+    def deselected(self, repo):
+        """Return why the matrix cell leaves this gate to another, or None (AR-23)."""
+        value = os.environ.get(SELECTION, "")
+        if not value:
+            return None
+        names = selections(repo)
+        if value not in names:
+            raise CannotRunError(
+                f"{SELECTION}={value!r} names no lint gate; expected one of "
+                + ", ".join(names),
+            )
+        if value == self.configuration:
+            return None
+        return f"{SELECTION} selects lint tree {value}"
 
     def applies(self, repo):
         if self.tree:

@@ -197,17 +197,24 @@ reports PASS because those events introduce no commits. It checks ranges on
 `push` and `pull_request`. An explicit `--range` or `--root` still checks that
 selection. Every other unrecognised event returns exit 2. The default local
 range covers commits pending against the upstream; after a bypassed commit is
-pushed, hosted push checks are the backstop.
+pushed, the hosted checks on its pull request, or on a push to `main`, are the
+backstop.
 
 `python3 dev.py build [--tree NAME]` configures enabled trees and runs a clean
 compilation plus CTest. Host uses `build/`; declared profiles use `build-NAME/`.
 A declared `house_cxx_declare_fuzzers_option(PREFIX)` also enables a fuzz tree
 using pinned Clang. `BUILD_ARGS` contributes one CMake argument per line, so
-spaces survive. `BUILD_TYPE` overrides the type; an existing cache keeps its type
-when no override is supplied. Package mode declarations control whether tests
-are required. Configure, compile and test warnings fail. Failed attempts
-invalidate old complete logs; successful clean builds retain complete evidence.
-No build tree is deleted by the Python helper.
+spaces survive. A nonempty `BUILD_TYPE` overrides the type; an existing cache
+keeps its type when no override is supplied. Package mode declarations control
+whether tests are required. Configure, compile and test warnings fail. Failed
+attempts invalidate old complete logs; successful clean builds retain complete
+evidence.
+No build tree is deleted by the Python helper. `--configure-only` configures
+the selected trees with the same arguments and merges their compile databases,
+which is all that lint reads. It neither compiles nor tests, and marks each
+tree's log incomplete, so the build and build-warnings gates still need a full
+build. Without `--tree` it configures every enabled tree, as the base lint
+instance needs.
 
 `python3 dev.py format --check` checks owned C++ files; omitting `--check`
 formats them. `python3 dev.py lint` runs declared source linters. Python lint
@@ -235,7 +242,10 @@ groups. The base build instance is host; `dev.py build` runs all enabled trees.
 Named lint instances analyse that tree's commands and reached headers; the base
 lint instance checks owned units and header coverage across the available
 compile commands. `dev.py lint` runs the lint group, including named instances,
-so conditional profile code is checked under its own flags. Package Doxyfiles
+so conditional profile code is checked under its own flags. A set
+`HOUSE_MATRIX_LINT_TREE` runs one lint instance and reports the others as N/A:
+`all` selects the base instance, which also lints Python, and a tree name
+selects that tree's instance. Any other value is refused. Package Doxyfiles
 run from their package roots; explicit shared Doxyfiles run from the checkout
 root.
 
@@ -344,12 +354,38 @@ and have no configured remote.
 Include `.github/workflows/ci.yml` in `sync.files`. Each applicable group gets a
 job; undeclared providers contribute none, while declared unavailable gates keep
 their obligations. `[ci].require` adds matrices and `schedule = "weekly"`.
-Weekly jobs run on schedule or dispatch; other groups run on pushes, pull requests
-and dispatches. Checkout uses an immutable action pin, recursive submodules and
-full history. Preparation installs declared tools; owned Python tests also run
-in the standards job with warnings as errors.
+Weekly jobs run on schedule or dispatch; other groups run on pushes to `main`,
+pull requests and dispatches. A push to another branch or a tag runs no checks;
+a branch's pull request does. Checkout uses an immutable action pin, recursive
+submodules and full history. Preparation installs declared tools; owned Python
+tests also run in the standards job with warnings as errors.
 
-Every matrix axis reaches the check as `HOUSE_MATRIX_<UPPERCASE_AXIS>`.
+Every matrix axis reaches the check as `HOUSE_MATRIX_<UPPERCASE_AXIS>`. A
+matrix may also hold a GitHub `include` list of tables of strings; it is copied
+unchanged, and each key in its entries is an axis. A cell that leaves a key out
+sees it empty: an empty `build_type` leaves the build type unset, and an empty
+`compiler` leaves `CC` and `CXX` empty. One lint job per tree looks like this:
+
+```toml
+[[ci.require]]
+group = "lint"
+matrix = { include = [
+  { lint_tree = "all", sanitize = "address" },
+  { lint_tree = "firmware" },
+  { lint_tree = "fuzz" },
+  { lint_tree = "sanitize", sanitize = "address" },
+  { lint_tree = "sanitize", sanitize = "thread" },
+] }
+prepare = ["python3 dev.py build --configure-only"]
+```
+
+The `all` cell names a sanitizer because its header coverage reads every tree's
+compile database, the sanitize tree's included. In a lint matrix, `lint_tree`
+must name only `all` and the repository's lint trees, and name each at least
+once; `sync` refuses any other set. A lint matrix that sets `lint_tree` in
+`include` cannot also have a list axis, because GitHub merges an include entry
+into the list combinations it matches; give each entry all its values instead.
+
 `build_type` also sets `BUILD_TYPE`; C++ `compiler = ["gcc", "clang"]` sets
 `CC` and `CXX`, using the pinned Clang major. Other axes reach profiles through
 the environment, or name a CMake cache variable under `[ci.axes]`:

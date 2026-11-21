@@ -51,6 +51,11 @@ def parser():
         help="configure, clean-build and test C++ trees",
     )
     building.add_argument("--tree")
+    building.add_argument(
+        "--configure-only",
+        action="store_true",
+        help="configure and merge compile databases without building or testing",
+    )
     formatting = commands.add_parser("format", help="format owned provider sources")
     formatting.add_argument("--check", action="store_true")
     commands.add_parser("lint", help="lint owned provider sources")
@@ -260,7 +265,7 @@ def auxiliary(repo, args):
     if args.command == "build":
         if "cxx" not in repo.config["house"]["languages"]:
             raise CannotRunError("build requires a C++ provider")
-        return report(build_all(repo, args.tree))
+        return report(build_all(repo, args.tree, configure=args.configure_only))
     if args.command == "hook":
         return hook_command(repo, args)
     if args.command == "sync":

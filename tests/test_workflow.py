@@ -6,11 +6,12 @@ from pathlib import Path
 
 import pytest
 
+from house.core import CannotRunError
 from house.gates.format import Format
 from house.gates.synced_files import SyncedFiles
 from house.runner import execute
 from house.sync import sync
-from house.workflow import CHECKOUT, WORKFLOW, model, render
+from house.workflow import CHECKOUT, WORKFLOW, matrix_environment, model, render
 from tests.conftest import git
 
 
@@ -53,7 +54,7 @@ def test_python_only_has_no_empty_cpp_jobs(repo, write):
     }
     assert len(CHECKOUT.split("@")[1]) == 40
     assert model(repo)["on"] == {
-        "push": {},
+        "push": {"branches": ["main"]},
         "pull_request": {},
         "workflow_dispatch": {},
         "repository_dispatch": {},
@@ -267,3 +268,143 @@ def test_discovered_python_tests_request_pytest(repo, write, path):
     steps = model(repo)["jobs"]["check_standards"]["steps"]
     assert any(step.get("name") == "Test owned Python" for step in steps)
     assert "--profile" in steps[1]["run"]
+
+
+def test_push_runs_only_on_main_and_other_events_are_unchanged(online):
+    online.config["ci"]["require"] = [{"group": "online", "schedule": "weekly"}]
+    events = model(online)["on"]
+    assert events["push"] == {"branches": ["main"]}
+    assert events["pull_request"] == {}
+    assert events["workflow_dispatch"] == {}
+    assert events["repository_dispatch"] == {}
+    assert events["schedule"] == [{"cron": "17 3 * * 1"}]
+
+
+def cxx_lint(repo, requirement):
+    repo.config["house"]["languages"] = ["cxx"]
+    repo.config["ci"]["require"] = [{"group": "lint", **requirement}]
+    return model(repo)["jobs"]["check_lint"]
+
+
+def test_cxx_lint_keeps_the_schedule_condition_of_other_jobs(repo):
+    job = cxx_lint(repo, {})
+    assert job["if"] == "${{ github.event_name != 'schedule' }}"
+    assert "schedule" not in model(repo)["on"]
+
+
+INCLUDE = [
+    {"lint_tree": "all", "sanitize": "address"},
+    {"lint_tree": "firmware"},
+    {"lint_tree": "fuzz"},
+    {"lint_tree": "sanitize", "sanitize": "address"},
+    {"lint_tree": "sanitize", "sanitize": "thread"},
+]
+
+
+@pytest.fixture
+def profiled(repo, write):
+    """Return a C++ repository with firmware, sanitize and fuzz lint trees."""
+    repo.config["house"]["languages"] = ["cxx"]
+    repo.config["trees"] = [{"name": "firmware", "profile": "firmware_profile"}]
+    write(
+        "CMakeLists.txt",
+        "house_cxx_enable_sanitizers(SAMPLE)\n"
+        "house_cxx_declare_fuzzers_option(SAMPLE)\n",
+    )
+    return repo
+
+
+def test_an_include_matrix_is_passed_through_with_one_variable_per_key(profiled):
+    job = cxx_lint(profiled, {"matrix": {"include": INCLUDE}})
+    assert job["strategy"]["matrix"] == {"include": INCLUDE}
+    assert job["env"] == {
+        "HOUSE_MATRIX_LINT_TREE": "${{ matrix.lint_tree }}",
+        "HOUSE_MATRIX_SANITIZE": "${{ matrix.sanitize }}",
+    }
+
+
+@pytest.mark.parametrize(
+    ("cells", "expected"),
+    [
+        ([*INCLUDE, {"lint_tree": "host"}], "lint_tree names no lint gate: host"),
+        (INCLUDE[:2], "lint_tree leaves lint gates unselected: fuzz, sanitize"),
+        (INCLUDE[1:], "lint_tree leaves lint gates unselected: all"),
+    ],
+)
+def test_a_lint_matrix_must_select_each_lint_gate_and_nothing_else(
+    profiled, cells, expected,
+):
+    with pytest.raises(CannotRunError, match=f"^{expected}$"):
+        cxx_lint(profiled, {"matrix": {"include": cells}})
+
+
+def test_one_sanitize_cell_covers_the_sanitize_tree(profiled):
+    cells = [INCLUDE[0], INCLUDE[1], INCLUDE[2], INCLUDE[4]]
+    assert cxx_lint(profiled, {"matrix": {"include": cells}})["strategy"]
+
+
+def test_a_listed_lint_tree_axis_is_checked_too(profiled):
+    with pytest.raises(CannotRunError, match="names no lint gate: other"):
+        cxx_lint(
+            profiled,
+            {"matrix": {"lint_tree": ["all", "firmware", "fuzz", "sanitize", "other"]}},
+        )
+
+
+def test_python_lint_accepts_only_all(repo):
+    repo.config["ci"]["require"] = [
+        {"group": "lint", "matrix": {"lint_tree": ["all"]}},
+    ]
+    assert model(repo)["jobs"]["check_lint"]["strategy"]
+    repo.config["ci"]["require"][0]["matrix"]["lint_tree"].append("fuzz")
+    with pytest.raises(CannotRunError, match="names no lint gate: fuzz"):
+        model(repo)
+
+
+def test_lint_tree_outside_the_lint_group_is_not_checked(repo):
+    repo.config["house"]["languages"] = ["cxx"]
+    repo.config["ci"]["require"] = [
+        {"group": "build", "matrix": {"lint_tree": ["anything"]}},
+    ]
+    assert model(repo)["jobs"]["check_build"]["strategy"]
+
+
+def test_include_keys_join_the_listed_axes(repo):
+    matrix = {"build_type": ["Debug"], "include": [{"extra": "x"}]}
+    assert matrix_environment(repo, matrix) == {
+        "HOUSE_MATRIX_BUILD_TYPE": "${{ matrix.build_type }}",
+        "BUILD_TYPE": "${{ matrix.build_type }}",
+        "HOUSE_MATRIX_EXTRA": "${{ matrix.extra }}",
+    }
+
+
+def test_a_listed_compiler_still_defaults_to_gcc(repo, write):
+    repo.config["house"]["languages"] = ["cxx"]
+    write("config/.clang-version", "20\n")
+    env = matrix_environment(repo, {"compiler": ["gcc", "clang"]})
+    assert env["CC"] == "${{ matrix.compiler == 'clang' && 'clang-20' || 'gcc' }}"
+    assert env["CXX"] == (
+        "${{ matrix.compiler == 'clang' && 'clang++-20' || 'g++' }}"
+    )
+
+
+def test_an_include_cell_without_a_compiler_gets_empty_cc_and_cxx(repo, write):
+    repo.config["house"]["languages"] = ["cxx"]
+    write("config/.clang-version", "20\n")
+    env = matrix_environment(
+        repo, {"include": [{"compiler": "clang"}, {"lint_tree": "all"}]},
+    )
+    assert env["CC"] == (
+        "${{ matrix.compiler == 'clang' && 'clang-20' || "
+        "matrix.compiler == 'gcc' && 'gcc' || '' }}"
+    )
+    assert env["CXX"] == (
+        "${{ matrix.compiler == 'clang' && 'clang++-20' || "
+        "matrix.compiler == 'gcc' && 'g++' || '' }}"
+    )
+
+
+def test_an_included_compiler_is_checked_like_a_listed_one(repo):
+    repo.config["house"]["languages"] = ["cxx"]
+    with pytest.raises(CannotRunError, match="supports gcc and clang"):
+        matrix_environment(repo, {"include": [{"compiler": "msvc"}]})
