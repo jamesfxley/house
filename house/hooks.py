@@ -81,8 +81,11 @@ def install(repo):
     )
 
 
-def commit_message(_repo, filename):
+def commit_message(repo, filename):
     path = Path(filename).resolve()
+    merge_head = repo.root / repo.git("rev-parse", "--git-path", "MERGE_HEAD").strip()
+    if merge_head.is_file():
+        return Result.ok("merge commit message not checked (EN-07.5)")
     return verdict(
         "EN-07.2",
         message_findings(read(path), path),

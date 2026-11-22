@@ -132,6 +132,29 @@ def test_two_pins_install_and_run_their_own_commit_hooks(hooked_families):
             assert marker in result.stdout + result.stderr
 
 
+# A merge's generated message passes the hook; ordinary commits are still checked.
+def test_hook_leaves_out_a_merge_in_progress(hooked_families):
+    root, _sha, _marker = hooked_families[0]
+    git(root, "checkout", "-qb", "work")
+    assert attempt(root, "tests: add the branch change").returncode == 0
+    git(root, "checkout", "-q", "-")
+    assert attempt(root, "tests: advance the base").returncode == 0
+    git(root, "checkout", "-q", "work")
+    result = subprocess.run(
+        ["git", "merge", "--no-edit", "-"],
+        cwd=root,
+        capture_output=True,
+        encoding="utf-8",
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "merge commit message not checked" in result.stdout + result.stderr
+    assert git(root, "rev-parse", "-q", "--verify", "HEAD^2")
+    result = attempt(root, "Bad subject")
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "EN-07.2" in result.stdout + result.stderr
+
+
 def test_bypass_is_caught_but_pre_commit_does_not_check_old_commits(hooked_families):
     root, _sha, _marker = hooked_families[0]
     result = attempt(root, "tests: Bypass the hook", bypass=True)

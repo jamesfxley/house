@@ -179,18 +179,20 @@ rather than being synced.
 local checks use the upstream, then `origin/main`, then all commits when no
 remote exists. A resolved empty range passes. Missing endpoints or nonempty
 shallow history return exit 2. Pull-request and push event payloads choose the
-configured CI endpoints. Initial and forced pushes select all history to the payload
-tip on the default branch, or the range from the merge-base with
-`origin/<default branch>` to the tip on another branch.
+configured CI endpoints. On a pull request and in the default local range, merge
+commits are not checked; push ranges, `--range` and `--root` still check them.
+Initial and forced pushes select all history to the payload tip on the default
+branch, or the range from the merge-base with `origin/<default branch>` to the
+tip on another branch.
 
 `python3 dev.py hook install` writes executable `.house/hooks` shims and sets
 local `core.hooksPath`. Both shims call this checkout's launcher through the
 installing interpreter. An existing custom hook setting or edited hook file
 prevents installation. `hook pre-commit` runs standards except commits;
-`hook commit-msg FILE` checks a pending message. `python3 dev.py doctor` checks
-installed hook paths and declared tool versions without changing settings.
-Review checks the subject's imperative wording, the body's reasoning and the
-area named in the subject.
+`hook commit-msg FILE` checks a pending message unless a merge is in progress.
+`python3 dev.py doctor` checks installed hook paths and declared tool versions
+without changing settings. Review checks the subject's imperative wording, the
+body's reasoning and the area named in the subject.
 
 For `schedule`, `workflow_dispatch` and `repository_dispatch`, the commits gate
 reports PASS because those events introduce no commits. It checks ranges on
