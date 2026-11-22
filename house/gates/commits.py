@@ -162,7 +162,7 @@ def event_selection(repo, env):
     return base + ".." + head, "HEAD"
 
 
-def selected_commits(repo, selection, root_head="HEAD"):
+def selected_commits(repo, selection, root_head="HEAD", skip_merges=False):
     if selection is None:
         tip = resolve(repo, root_head)
     else:
@@ -171,12 +171,16 @@ def selected_commits(repo, selection, root_head="HEAD"):
             raise CannotRunError("expected a two-endpoint BASE..HEAD range")
         base, head = (resolve(repo, part) for part in parts)
         tip = base + ".." + head
-    commits = repo.git("rev-list", "--reverse", tip).splitlines()
-    if commits and repo.git("rev-parse", "--is-shallow-repository").strip() == "true":
+    rows = [
+        row.split()
+        for row in repo.git("rev-list", "--reverse", "--parents", tip).splitlines()
+    ]
+    if rows and repo.git("rev-parse", "--is-shallow-repository").strip() == "true":
         raise CannotRunError(
             "shallow history cannot prove the selected range; fetch full history",
         )
-    return commits
+    # A row holds the commit and its parents; three or more fields is a merge.
+    return [row[0] for row in rows if not skip_merges or len(row) < 3]
 
 
 def check_commit(repo, sha):
@@ -196,6 +200,7 @@ class Commits(Always):
         selection.add_argument("--root", action="store_true")
         args = parser.parse_args(argv)
         root_head = "HEAD"
+        skip_merges = False
         if args.root:
             selected = None
         elif args.range is not None:
@@ -208,14 +213,17 @@ class Commits(Always):
                     "ranges are checked on push and pull_request",
                 )
             selected, root_head = event_range
+            skip_merges = os.environ["GITHUB_EVENT_NAME"] == "pull_request"
         else:
             selected = local_selection(repo)
-        commits = selected_commits(repo, selected, root_head)
+            skip_merges = True
+        commits = selected_commits(repo, selected, root_head, skip_merges)
         findings = []
         for sha in commits:
             findings.extend(check_commit(repo, sha))
         return verdict(
             "EN-07.2",
             findings,
-            f"{len(commits)} commits pending; checked every selected commit",
+            f"{len(commits)} commits pending; checked every selected commit"
+            + (" apart from merges (EN-07.5)" if skip_merges else ""),
         )

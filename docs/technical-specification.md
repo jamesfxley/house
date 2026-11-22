@@ -18,14 +18,17 @@ only the public API, and synced configuration shall match deterministic output.
 unreadable inputs as unavailable. Refusal tests shall check the finding text.
 
 **AR-5** — Commit checks shall inspect every commit selected by the configured
-range, including branch commits and merge parents. Resolved empty ranges shall
+range, including branch commits and merge parents. On a pull request event and
+in the default local range, merge commits shall not be inspected (EN-07.5); push
+ranges, `--range` and `--root` inspect every merge. Resolved empty ranges shall
 pass; unresolved endpoints and incomplete shallow history shall be unavailable.
 Initial and forced pushes shall select all history to the payload tip on the
 default branch, or the range from the merge-base with `origin/<default branch>`
 to the tip on another branch. A present non-boolean `forced` field shall be
-unavailable. Other pushes shall select `before..head`.
-Installed hooks shall run the checkout's pinned launcher. The message hook shall
-check the pending message; pre-commit shall run standards excluding old commits.
+unavailable. Other pushes shall select `before..head`. Installed hooks shall run
+the checkout's pinned launcher. The message hook shall check the pending message
+unless a merge is in progress; pre-commit shall run standards excluding old
+commits.
 
 Without an explicit selection, schedule, workflow_dispatch and
 repository_dispatch events introduce no commits and shall report that push and
@@ -258,6 +261,19 @@ The rows name the tests and the criteria below.
 - `test_commits.py`:
   `test_root_and_branch_commits_including_bypass`;
   all selected branch commits are inspected.
+- `test_commits.py`:
+  `test_branch_ranges_skip_a_merge_of_base_commits`;
+  a branch update's merge is not inspected on a pull request or in the default
+  local range.
+- `test_commits.py`:
+  `test_pull_request_checks_commits_a_branch_merge_brings_in`;
+  a merge of another branch is not inspected, but the commits it brings in are.
+- `test_commits.py`:
+  `test_merge_outside_a_pull_request_is_checked`;
+  the same merge is inspected on a push, under `--range` and under `--root`.
+- `test_hooks.py`:
+  `test_hook_leaves_out_a_merge_in_progress`;
+  a merge's message passes the hook; the next ordinary message is checked.
 - `test_commits.py`:
   `test_empty_and_unresolved_ranges`;
   empty ranges pass; missing endpoints return 2.

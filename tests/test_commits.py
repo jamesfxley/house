@@ -109,6 +109,96 @@ def test_clean_clone_simulated_push_and_next_commit(repo, write, tmp_path):
     assert_pass(cloned, Commits())
 
 
+def update_merge(repo, write):
+    """Return base and branch tip after merging new base commits into the branch."""
+    write("tests/base.txt", "one\n")
+    commit(repo.root)
+    git(repo.root, "checkout", "-qb", "work")
+    write("tests/work.txt", "work\n")
+    commit(repo.root, "tests: add the branch change")
+    git(repo.root, "checkout", "-q", "main")
+    write("tests/base.txt", "two\n")
+    base = commit(repo.root, "tests: advance the base")
+    git(repo.root, "checkout", "-q", "work")
+    git(
+        repo.root,
+        "merge",
+        "--quiet",
+        "-m",
+        "Merge branch 'main' into work\n\nCo-authored-by: Example <a@example.invalid>",
+        "main",
+    )
+    return base, git(repo.root, "rev-parse", "HEAD").strip()
+
+
+def set_event(monkeypatch, write, event, data):
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(write("event.json", json.dumps(data))))
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+
+
+# A merge on a branch carries a generated message the squash discards (EN-07.5).
+@pytest.mark.parametrize("selection", ["pull_request", "local"])
+def test_branch_ranges_skip_a_merge_of_base_commits(
+    repo, write, monkeypatch, selection,
+):
+    base, head = update_merge(repo, write)
+    if selection == "pull_request":
+        set_event(monkeypatch, write, "pull_request", {
+            "pull_request": {"base": {"sha": base}, "head": {"sha": head}},
+        })
+        pending = 1
+    else:
+        monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
+        git(repo.root, "remote", "add", "origin", str(repo.root))
+        git(repo.root, "update-ref", "refs/remotes/origin/main", base + "~1")
+        pending = 2
+    entry = execute(repo, Commits())
+    assert entry.result.status == 0, entry.result
+    assert entry.result.message == (
+        f"{pending} commits pending; checked every selected commit "
+        "apart from merges (EN-07.5)"
+    )
+
+
+def test_pull_request_checks_commits_a_branch_merge_brings_in(
+    repo, write, monkeypatch,
+):
+    base, _head = update_merge(repo, write)
+    git(repo.root, "checkout", "-qb", "other", base)
+    write("tests/other.txt", "other\n")
+    bad = commit(repo.root, "tests: Bypass the hook")
+    git(repo.root, "checkout", "-q", "work")
+    git(repo.root, "merge", "--quiet", "--no-edit", "other")
+    head = git(repo.root, "rev-parse", "HEAD").strip()
+    set_event(monkeypatch, write, "pull_request", {
+        "pull_request": {"base": {"sha": base}, "head": {"sha": head}},
+    })
+    entry = execute(repo, Commits())
+    assert entry.result.status == 1
+    assert {row.path for row in entry.result.findings} == {bad}
+    assert any("opening lowercase" in row.message for row in entry.result.findings)
+
+
+# Outside a pull request the merge may be on the default branch, so it is checked.
+@pytest.mark.parametrize("selection", ["push", "range", "root"])
+def test_merge_outside_a_pull_request_is_checked(
+    repo, write, monkeypatch, selection,
+):
+    base, head = update_merge(repo, write)
+    argv = ()
+    if selection == "push":
+        set_event(monkeypatch, write, "push", {"before": base, "after": head})
+    else:
+        monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
+        argv = ("--root",) if selection == "root" else ("--range", base + "..HEAD")
+    entry = execute(repo, Commits(), argv)
+    assert entry.result.status == 1
+    messages = {row.message for row in entry.result.findings if row.path == head}
+    assert any("opening lowercase" in message for message in messages), messages
+    assert any("trailer" in message for message in messages), messages
+
+
 def test_empty_and_unresolved_ranges(repo, write):
     write("tests/item.txt", "first\n")
     commit(repo.root)
