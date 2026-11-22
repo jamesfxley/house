@@ -12,7 +12,12 @@ from house.trees import configure_args, trees
 COMPLETE = "# dev.py: every source compiled in a clean build"
 
 
-def build_tree(repo, tree):
+def configure_tree(repo, tree):
+    """Configure `tree`, leaving build.log marked incomplete (AR-24).
+
+    Return the tree's environment and a failed result for configure warnings,
+    or None in its place when the configure is clean.
+    """
     directory = tree.directory(repo)
     if not directory.resolve().is_relative_to(repo.root.resolve()):
         raise CannotRunError("build tree must remain in the checkout")
@@ -41,7 +46,22 @@ def build_tree(repo, tree):
             "cmake could not configure " + tree.name + ":\n" + diagnostic(configured),
         )
     if warning(diagnostic(configured)):
-        return Result.fail(Finding(directory, 0, "EN-01.3", diagnostic(configured)))
+        return env, Result.fail(
+            Finding(directory, 0, "EN-01.3", diagnostic(configured)),
+        )
+    return env, None
+
+
+def configure_only(repo, tree):
+    _, failure = configure_tree(repo, tree)
+    return failure or Result.ok(tree.name + " configured")
+
+
+def build_tree(repo, tree):
+    env, failure = configure_tree(repo, tree)
+    if failure:
+        return failure
+    directory = tree.directory(repo)
     built = run(["cmake", "--build", str(directory), "--clean-first"], repo.root, env)
     text = diagnostic(built)
     clean = built.returncode == 0
@@ -72,12 +92,17 @@ def build_tree(repo, tree):
     return Result.ok(tree.name + " configured, clean-built and tested")
 
 
-def build(repo, name=None):
+def build(repo, name=None, *, configure=False):
+    """Build and test the selected trees, or with `configure` only configure them.
+
+    Configuring alone writes compile databases but no build evidence.
+    """
     selected = [tree for tree in trees(repo) if name is None or tree.name == name]
     if not selected:
         raise CannotRunError(f"unknown build tree: {name}")
-    results = [build_tree(repo, tree) for tree in selected]
-    # Merge only after every requested tree established build evidence.
+    step = configure_only if configure else build_tree
+    results = [step(repo, tree) for tree in selected]
+    # Merge only after every requested tree completed its step cleanly.
     if all(result.status == 0 for result in results):
         merge(repo)
     failures = tuple(item for result in results for item in result.findings)

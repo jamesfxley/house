@@ -180,6 +180,7 @@ def configure_args(repo, tree, directory=None, *, axes=True):
     directory = directory or tree.directory(repo)
     args = ["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"]
     if os.environ.get("BUILD_TYPE") or not (directory / "CMakeCache.txt").exists():
-        args.append("-DCMAKE_BUILD_TYPE=" + os.environ.get("BUILD_TYPE", "Debug"))
+        # Empty, as in a matrix cell without build_type, means unset.
+        args.append("-DCMAKE_BUILD_TYPE=" + (os.environ.get("BUILD_TYPE") or "Debug"))
     args.extend(arg for arg in os.environ.get("BUILD_ARGS", "").splitlines() if arg)
     return [*args, *(axis_args(repo) if axes else []), *tree.args]

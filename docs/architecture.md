@@ -21,7 +21,9 @@ one, else the system CPU count), with no fixed cap. Profiles are loaded before
 workers start, and each header has a private compile database. Unit analysis
 uses the first command per source, as the database merge does. Variants intended
 to fail remain in their own tree for CTest to check. Findings retain source
-order.
+order. The runner asks only the built-in lint gate whether
+HOUSE_MATRIX_LINT_TREE leaves it to another matrix cell; that check is internal
+and not part of the `house.api` gate contract.
 
 Configuration bases are common or language-specific data. The sync renderer
 accepts a fixed set of fields and types. It merges selected provider data before

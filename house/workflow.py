@@ -5,6 +5,7 @@ import importlib
 import json
 
 from house.core import CannotRunError, read
+from house.gates.lint import selections
 
 CHECKOUT = "actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8"
 WORKFLOW = ".github/workflows/ci.yml"
@@ -23,7 +24,24 @@ def container(repo):
     return value
 
 
+def matrix_values(matrix):
+    """Return each axis with every value its lists and `include` entries give.
+
+    The matrix is validated when the configuration loads.
+    """
+    values = {
+        axis: list(listed) for axis, listed in matrix.items() if axis != "include"
+    }
+    for item in matrix.get("include", []):
+        for axis, value in item.items():
+            values.setdefault(axis, []).append(value)
+    return values
+
+
 def matrix_environment(repo, matrix):
+    # An `include` cell can omit any axis, so it must not default to gcc.
+    included = "include" in matrix
+    matrix = matrix_values(matrix)
     env = {"HOUSE_MATRIX_" + key.upper(): "${{ matrix." + key + " }}" for key in matrix}
     if "build_type" in matrix:
         env["BUILD_TYPE"] = "${{ matrix.build_type }}"
@@ -38,13 +56,33 @@ def matrix_environment(repo, matrix):
         major = " ".join(word for word in words if word)
         if not major.isdecimal():
             raise CannotRunError("compiler matrix needs a numeric Clang pin")
-        env["CC"] = (
-            "${{ matrix.compiler == 'clang' && 'clang-" + major + "' || 'gcc' }}"
-        )
-        env["CXX"] = (
-            "${{ matrix.compiler == 'clang' && 'clang++-" + major + "' || 'g++' }}"
-        )
+        for variable, clang, gcc in (
+            ("CC", "clang-" + major, "gcc"), ("CXX", "clang++-" + major, "g++"),
+        ):
+            chosen = "matrix.compiler == 'clang' && '" + clang + "' || "
+            if included:
+                chosen += "matrix.compiler == 'gcc' && '" + gcc + "' || ''"
+            else:
+                chosen += "'" + gcc + "'"
+            env[variable] = "${{ " + chosen + " }}"
     return env
+
+
+def lint_selection(repo, matrix):
+    """Refuse lint_tree values that name no lint gate or leave one out (AR-23)."""
+    values = set(matrix_values(matrix).get("lint_tree", []))
+    if not values:
+        return
+    names = set(selections(repo))
+    if values - names:
+        raise CannotRunError(
+            "lint_tree names no lint gate: " + ", ".join(sorted(values - names)),
+        )
+    if names - values:
+        raise CannotRunError(
+            "lint_tree leaves lint gates unselected: "
+            + ", ".join(sorted(names - values)),
+        )
 
 
 def test_files(repo):
@@ -112,6 +150,8 @@ def job(repo, group, requirement, image):
         "steps": steps,
     }
     matrix = requirement.get("matrix", {})
+    if group == "lint":
+        lint_selection(repo, matrix)
     if matrix:
         value["strategy"] = {"fail-fast": False, "matrix": matrix}
         value["env"] = matrix_environment(repo, matrix)
@@ -164,7 +204,7 @@ def model(repo):
         )
     image = container(repo)
     events = {
-        "push": {},
+        "push": {"branches": ["main"]},
         "pull_request": {},
         "workflow_dispatch": {},
         "repository_dispatch": {},

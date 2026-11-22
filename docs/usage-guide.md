@@ -12,11 +12,12 @@ family references and repository precedence. The
 ceiling file. Review checks the deviation register and requirement citations.
 
 For C++, run `python3 dev.py build`, `python3 dev.py format --check`, and
-`python3 dev.py lint`. A full build group also checks its compile database and
-complete warning logs. `gate api-docs` checks the package Doxyfiles. Clang
-tooling must match the pinned major; Python lint uses the pinned Ruff version. A
-valid input is UTF-8. Unavailable tools or unreadable inputs return 2; reported
-faults return 1.
+`python3 dev.py lint`. `build --configure-only` writes the compile databases
+lint needs without compiling. A full build group also checks its compile
+database and complete warning logs. `gate api-docs` checks the package
+Doxyfiles. Clang tooling must match the pinned major; Python lint uses the
+pinned Ruff version. A valid input is UTF-8. Unavailable tools or unreadable
+inputs return 2; reported faults return 1.
 
 Use `python3 dev.py gate consumer` for installed package checks, or select a
 single tree with `--tree NAME`. Each installable package supplies an indexed

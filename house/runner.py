@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from house.api import Gate, Repo, Result
 from house.config import GROUPS
 from house.core import CannotRunError
+from house.gates.lint import Lint
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,18 @@ def provider_reason(repo: Repo, gate: Gate):
     return None
 
 
+def not_applicable(repo: Repo, gate: Gate):
+    """Return why a gate is N/A: an undeclared provider or another matrix cell.
+
+    Only the built-in lint gate is consulted for matrix selection; it is not
+    part of the gate contract.
+    """
+    reason = provider_reason(repo, gate)
+    if reason is None and isinstance(gate, Lint):
+        reason = gate.deselected(repo)
+    return reason
+
+
 def applies(repo: Repo, gate: Gate):
     applicable = gate.applies(repo)
     if applicable is not True and (
@@ -76,7 +89,7 @@ def valid_result(name, result):
 
 def execute(repo: Repo, gate: Gate, argv=(), *, ci=False) -> Entry:
     try:
-        reason = provider_reason(repo, gate)
+        reason = not_applicable(repo, gate)
         if reason:
             return describe(gate, "N/A", Result.ok(reason))
         applicable = applies(repo, gate)
@@ -176,7 +189,7 @@ class Runner:
         entries = []
         for gate in self.select(groups, all_groups=all_groups):
             try:
-                reason = provider_reason(self.repo, gate)
+                reason = not_applicable(self.repo, gate)
                 if reason:
                     entries.append(describe(gate, f"n/a: {reason}", Result.ok(reason)))
                     continue

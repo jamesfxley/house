@@ -661,3 +661,29 @@ def test_the_build_gate_configures_every_tree_with_the_variable(
     assert build(cpp).status == 0
     cache = (cpp.root / "build/CMakeCache.txt").read_text()
     assert "SAMPLE_PROFILE:UNINITIALIZED=large" in cache
+
+
+def test_configure_only_merges_databases_without_build_evidence(cpp, capsys):
+    assert build(cpp).status == 0
+    assert (cpp.root / "build/build.log").read_text().startswith(COMPLETE)
+    shutil.rmtree(cpp.root / "build")
+    (cpp.root / "compile_commands.json").unlink()
+    assert main(cpp.root, ["build", "--configure-only"]) == 0
+    assert "host configured" in capsys.readouterr().out
+    merged = json.loads((cpp.root / "compile_commands.json").read_text())
+    assert sorted(Path(entry["file"]).name for entry in merged) == [
+        "arithmetic.cpp", "main.cpp",
+    ]
+    assert not (cpp.root / "build/synthetic_test").exists()
+    assert not (cpp.root / "build/build.log").read_text().startswith(COMPLETE)
+    entry = execute(cpp, BuildWarnings())
+    assert entry.result.status == 2
+    assert "lacks complete compile evidence" in entry.result.message
+    # Lint reads only the compile databases and the sources they name.
+    assert_pass(cpp, Lint())
+
+
+def test_configure_only_replaces_earlier_build_evidence(cpp):
+    assert build(cpp).status == 0
+    assert build(cpp, configure=True).status == 0
+    assert not (cpp.root / "build/build.log").read_text().startswith(COMPLETE)

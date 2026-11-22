@@ -291,6 +291,52 @@ def ci_image(ci):
             problem("ci.container_user", "expected a user or user:group")
 
 
+AXIS = re.compile(r"[a-z][a-z0-9_]*")
+
+
+def matrix_include(values):
+    """Validate GitHub `include` entries: each a nonempty table of axis strings."""
+    label = "ci.require.matrix.include"
+    if not isinstance(values, list) or not values:
+        problem(label, "expected a nonempty list of tables")
+    for item in values:
+        if not table(item, label):
+            problem(label, "an entry must name at least one axis")
+        for axis, value in item.items():
+            if not AXIS.fullmatch(axis):
+                problem(
+                    label, "axis must use lowercase letters, digits and underscores",
+                )
+            text(value, f"{label}.{axis}")
+
+
+def ci_matrix(requirement, group):
+    """Validate a requirement's list axes and `include` entries (AR-23)."""
+    matrix = table(requirement.get("matrix", {}), "ci.require.matrix")
+    for axis, values in matrix.items():
+        if axis == "include":
+            matrix_include(values)
+            continue
+        if not AXIS.fullmatch(axis):
+            problem(
+                "ci.require.matrix",
+                "axis must use lowercase letters, digits and underscores",
+            )
+        if not strings(values, f"ci.require.matrix.{axis}"):
+            problem("ci.require.matrix", "an axis must have at least one value")
+    # GitHub merges an include entry into the combinations of list axes it
+    # matches, so the cells cannot be derived from the entries alone.
+    if (
+        group == "lint"
+        and any("lint_tree" in item for item in matrix.get("include", []))
+        and len(matrix) > 1
+    ):
+        problem(
+            "ci.require.matrix",
+            "lint_tree in include cannot be combined with a list axis",
+        )
+
+
 def ci_settings(config):
     ci = config.setdefault("ci", {})
     keys(ci, {"container", "container_user", "skip", "require", "axes"}, "ci")
@@ -313,23 +359,12 @@ def ci_settings(config):
         seen.add(group)
         container_options(requirement, ci)
         ci_prepare(requirement)
-        for axis, values in table(
-            requirement.get("matrix", {}),
-            "ci.require.matrix",
-        ).items():
-            if not re.fullmatch(r"[a-z][a-z0-9_]*", axis):
-                problem(
-                    "ci.require.matrix",
-                    "axis must use lowercase letters, digits and underscores",
-                )
-            if not strings(values, f"ci.require.matrix.{axis}"):
-                problem("ci.require.matrix", "an axis must have at least one value")
+        ci_matrix(requirement, group)
         if "schedule" in requirement and requirement["schedule"] != "weekly":
             problem("ci.require.schedule", "only weekly is supported")
     matrix_axes(ci)
 
 
-AXIS = re.compile(r"[a-z][a-z0-9_]*")
 VARIABLE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 HOUSE_VARIABLES = {
     "CMAKE_BUILD_TYPE",
@@ -347,7 +382,11 @@ RESERVED_AXES = {"build_type", "compiler"}
 def matrix_axes(ci):
     """Validate the axes that set a CMake cache variable in every tree."""
     axes = table(ci.setdefault("axes", {}), "ci.axes")
-    used = {axis for item in ci["require"] for axis in item.get("matrix", {})}
+    used = set()
+    for item in ci["require"]:
+        matrix = item.get("matrix", {})
+        used.update(axis for axis in matrix if axis != "include")
+        used.update(axis for entry in matrix.get("include", []) for axis in entry)
     seen = {}
     for axis, variable in axes.items():
         label = f"ci.axes.{axis}"
