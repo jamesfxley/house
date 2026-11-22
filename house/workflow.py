@@ -69,20 +69,37 @@ def matrix_environment(repo, matrix):
 
 
 def lint_selection(repo, matrix):
-    """Refuse lint_tree values that name no lint gate or leave one out (AR-23)."""
-    values = set(matrix_values(matrix).get("lint_tree", []))
-    if not values:
-        return
+    """Return the lint matrix without cells for absent trees (AR-23).
+
+    A family row serves repositories with different trees, so a value naming
+    a tree type this repository lacks is dropped; any other value is refused.
+    """
+    if not matrix_values(matrix).get("lint_tree"):
+        return matrix
     names = set(selections(repo))
-    if values - names:
+    known = {"all", "sanitize", "fuzz", *(t["name"] for t in repo.config["trees"])}
+    absent = known - names
+    kept = dict(matrix)
+    if "include" in kept:
+        kept["include"] = [
+            cell for cell in kept["include"] if cell.get("lint_tree") not in absent
+        ]
+    if "lint_tree" in kept:
+        kept["lint_tree"] = [
+            value for value in kept["lint_tree"] if value not in absent
+        ]
+    values = set(matrix_values(kept).get("lint_tree", []))
+    if values - known:
         raise CannotRunError(
-            "lint_tree names no lint gate: " + ", ".join(sorted(values - names)),
+            "lint_tree names no lint tree: " + ", ".join(sorted(values - known)),
         )
+    # `all` is always selectable, so this also refuses an emptied matrix.
     if names - values:
         raise CannotRunError(
             "lint_tree leaves lint gates unselected: "
             + ", ".join(sorted(names - values)),
         )
+    return kept
 
 
 def test_files(repo):
@@ -151,7 +168,7 @@ def job(repo, group, requirement, image):
     }
     matrix = requirement.get("matrix", {})
     if group == "lint":
-        lint_selection(repo, matrix)
+        matrix = lint_selection(repo, matrix)
     if matrix:
         value["strategy"] = {"fail-fast": False, "matrix": matrix}
         value["env"] = matrix_environment(repo, matrix)

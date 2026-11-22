@@ -381,10 +381,12 @@ prepare = ["python3 dev.py build --configure-only"]
 
 The `all` cell names a sanitizer because its header coverage reads every tree's
 compile database, the sanitize tree's included. In a lint matrix, `lint_tree`
-must name only `all` and the repository's lint trees, and name each at least
-once; `sync` refuses any other set. A lint matrix that sets `lint_tree` in
-`include` cannot also have a list axis, because GitHub merges an include entry
-into the list combinations it matches; give each entry all its values instead.
+must name `all` and each of the repository's lint trees. A cell or value naming
+`sanitize`, `fuzz` or a declared tree that the repository lacks is left out, so
+one family row can serve repositories with different trees; `sync` refuses any
+other name. A lint matrix that sets `lint_tree` in `include` cannot also have a
+list axis, because GitHub merges an include entry into the list combinations it
+matches; give each entry all its values instead.
 
 `build_type` also sets `BUILD_TYPE`; C++ `compiler = ["gcc", "clang"]` sets
 `CC` and `CXX`, using the pinned Clang major. Other axes reach profiles through

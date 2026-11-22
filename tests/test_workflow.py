@@ -326,12 +326,12 @@ def test_an_include_matrix_is_passed_through_with_one_variable_per_key(profiled)
 @pytest.mark.parametrize(
     ("cells", "expected"),
     [
-        ([*INCLUDE, {"lint_tree": "host"}], "lint_tree names no lint gate: host"),
+        ([*INCLUDE, {"lint_tree": "host"}], "lint_tree names no lint tree: host"),
         (INCLUDE[:2], "lint_tree leaves lint gates unselected: fuzz, sanitize"),
         (INCLUDE[1:], "lint_tree leaves lint gates unselected: all"),
     ],
 )
-def test_a_lint_matrix_must_select_each_lint_gate_and_nothing_else(
+def test_a_lint_matrix_must_select_each_lint_gate_and_no_unknown_tree(
     profiled, cells, expected,
 ):
     with pytest.raises(CannotRunError, match=f"^{expected}$"):
@@ -344,21 +344,70 @@ def test_one_sanitize_cell_covers_the_sanitize_tree(profiled):
 
 
 def test_a_listed_lint_tree_axis_is_checked_too(profiled):
-    with pytest.raises(CannotRunError, match="names no lint gate: other"):
+    with pytest.raises(CannotRunError, match="names no lint tree: other"):
         cxx_lint(
             profiled,
             {"matrix": {"lint_tree": ["all", "firmware", "fuzz", "sanitize", "other"]}},
         )
 
 
-def test_python_lint_accepts_only_all(repo):
+def test_python_lint_drops_tree_values_and_refuses_unknown_ones(repo):
+    repo.config["trees"] = [{"name": "firmware", "profile": "firmware_profile"}]
     repo.config["ci"]["require"] = [
-        {"group": "lint", "matrix": {"lint_tree": ["all"]}},
+        {"group": "lint", "matrix": {"lint_tree": ["all", "firmware", "fuzz"]}},
     ]
-    assert model(repo)["jobs"]["check_lint"]["strategy"]
-    repo.config["ci"]["require"][0]["matrix"]["lint_tree"].append("fuzz")
-    with pytest.raises(CannotRunError, match="names no lint gate: fuzz"):
+    job = model(repo)["jobs"]["check_lint"]
+    assert job["strategy"]["matrix"] == {"lint_tree": ["all"]}
+    repo.config["ci"]["require"][0]["matrix"]["lint_tree"].append("other")
+    with pytest.raises(CannotRunError, match="names no lint tree: other"):
         model(repo)
+
+
+def test_cells_for_absent_tree_types_are_dropped(repo, write):
+    # A family row lists every tree type; this repository has no fuzz tree.
+    repo.config["house"]["languages"] = ["cxx"]
+    repo.config["trees"] = [{"name": "firmware", "profile": "firmware_profile"}]
+    write("CMakeLists.txt", "house_cxx_enable_sanitizers(SAMPLE)\n")
+    job = cxx_lint(repo, {"matrix": {"include": INCLUDE}})
+    assert job["strategy"]["matrix"] == {
+        "include": [cell for cell in INCLUDE if cell["lint_tree"] != "fuzz"],
+    }
+
+
+def test_a_listed_axis_drops_an_absent_fuzz_tree(repo, write):
+    repo.config["house"]["languages"] = ["cxx"]
+    write("CMakeLists.txt", "house_cxx_enable_sanitizers(SAMPLE)\n")
+    job = cxx_lint(repo, {"matrix": {"lint_tree": ["all", "fuzz", "sanitize"]}})
+    assert job["strategy"]["matrix"] == {"lint_tree": ["all", "sanitize"]}
+
+
+def test_python_lint_drops_a_declared_tree_cell_and_its_axes(repo):
+    repo.config["trees"] = [{"name": "firmware", "profile": "firmware_profile"}]
+    repo.config["ci"]["require"] = [{"group": "lint", "matrix": {"include": [
+        {"lint_tree": "all"}, {"lint_tree": "firmware", "compiler": "clang"},
+    ]}}]
+    job = model(repo)["jobs"]["check_lint"]
+    assert job["strategy"]["matrix"] == {"include": [{"lint_tree": "all"}]}
+    assert job["env"] == {"HOUSE_MATRIX_LINT_TREE": "${{ matrix.lint_tree }}"}
+
+
+@pytest.mark.parametrize(
+    "matrix", [{"lint_tree": ["fuzz"]}, {"include": [{"lint_tree": "fuzz"}]}],
+)
+def test_a_matrix_emptied_by_dropping_is_refused(repo, matrix):
+    repo.config["house"]["languages"] = ["cxx"]
+    with pytest.raises(
+        CannotRunError, match=r"^lint_tree leaves lint gates unselected: all$",
+    ):
+        cxx_lint(repo, {"matrix": matrix})
+
+
+def test_a_new_library_without_sanitizers_keeps_all_and_firmware(repo):
+    # House init renders before a scaffold declares sanitizers.
+    repo.config["house"]["languages"] = ["cxx"]
+    repo.config["trees"] = [{"name": "firmware", "profile": "firmware_profile"}]
+    job = cxx_lint(repo, {"matrix": {"include": INCLUDE}})
+    assert job["strategy"]["matrix"] == {"include": INCLUDE[:2]}
 
 
 def test_lint_tree_outside_the_lint_group_is_not_checked(repo):
