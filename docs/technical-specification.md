@@ -152,10 +152,12 @@ refused. In a matrix with `include`, a cell without `compiler` shall get empty
 CC and CXX, and an empty BUILD_TYPE shall configure as if unset. A set
 HOUSE_MATRIX_LINT_TREE shall run only the lint instance it names, `all` naming
 the base instance, and report the others as not applicable; an unknown name
-shall be unavailable. Rendering shall refuse a lint matrix whose `lint_tree`
-values name anything other than `all` and the repository's lint trees, or omit
-one of them. Configuration shall refuse a lint matrix that sets `lint_tree` in
-`include` together with a list axis.
+shall be unavailable. Rendering shall drop each `lint_tree` value and include
+cell that names `sanitize`, `fuzz` or a declared tree absent from the
+repository's lint trees. It shall refuse a lint matrix with any other value
+besides `all` and the repository's lint trees, or one that omits a lint tree.
+Configuration shall refuse a lint matrix that sets `lint_tree` in `include`
+together with a list axis.
 
 **AR-24** — `dev.py build --configure-only` shall configure the selected trees
 with the build's arguments and merge their compile databases, without
@@ -188,7 +190,7 @@ The rows name the tests and the criteria below.
 | AR-20 | `test_trees_resolve_once_for_all_entries_and_again_next_run` counts one resolution per invocation; the three producer reuse tests in `test_consumer.py` count actual CMake installs and preserve refusal evidence. |
 | AR-21 | `test_sync.py` checks deterministic editor overlays and environment refusal. |
 | AR-22 | `test_sanitize.py` checks disabled values, each accepted value, the refusal of others, the refusal without a declaration in a C++ repository, declarations, prefix, argument order, per-value environment, gate names and collisions. `test_cmake.py` configures real projects for `thread` and requires ThreadSanitizer, UBSan without `vptr` and no AddressSanitizer flags, keeps `vptr` for `address`, refuses other values and `thread` with fuzzers in either order and in a child directory, accepts them in sibling directories, with a compiler without libFuzzer and with a thread flag inside an unrelated option, runs a racy program that fails with a ThreadSanitizer report, and runs a program that joins threads without one, built by GCC and by clang. |
-| AR-23 | `test_workflow.py` and `test_matrix_axes.py` render include matrices, refuse malformed ones, lint matrices that miss or add a lint tree and `lint_tree` in `include` beside a list axis, give include cells without `compiler` empty CC and CXX, and configure an empty BUILD_TYPE as unset; `test_lint_selection.py` runs one lint instance per selection, lists the rest as N/A, refuses unknown names and leaves other gates alone. |
+| AR-23 | `test_workflow.py` and `test_matrix_axes.py` render include matrices; refuse malformed ones, lint matrices that miss a lint tree or name an unknown one, and `lint_tree` in `include` beside a list axis; drop cells and values for absent tree types; give include cells without `compiler` empty CC and CXX; and configure an empty BUILD_TYPE as unset; `test_lint_selection.py` runs one lint instance per selection, lists the rest as N/A, refuses unknown names and leaves other gates alone. |
 | AR-24 | `test_configure_only_merges_databases_without_build_evidence` and `test_configure_only_replaces_earlier_build_evidence` check the merged database, absent build outputs, incomplete evidence and a passing lint. |
 
 ### AR-1 verification
