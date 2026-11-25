@@ -17,7 +17,12 @@ exists, read it. Do not copy those notes into shared content.
 - Work on the branch required by the repository's contribution policy. Local
   commits and read-only Git or GitHub queries need no approval.
 - Commit messages carry no trailers: no Co-Authored-By, generated footer or
-  ticket trailer (EN-07.4). Put issue references in the pull-request body.
+  ticket trailer (EN-07.4). Pull-request and issue bodies and comments carry
+  no generated footer or attribution line either. Put issue references in the
+  pull-request body.
+- A pull-request or issue body fills every heading of the repository's
+  template on its default branch, in order; a heading that does not apply says
+  so.
 - Under the standard, follow
   [EN-07](../standard/engineering/07-version-control.md) for branches, commit
   subjects and issue titles. Follow the local policy for commit bodies.
@@ -55,7 +60,8 @@ that specific work:
 1. A push or any GitHub write, each as a separate action.
 2. A delete, overwrite or history rewrite. Inspect the target first and explain
    what would be lost. Amending, squashing or reordering unpushed commits made
-   in the current session is exempt.
+   in the current session is exempt. Deleting a local branch whose tip equals
+   the head of its squash-merged pull request is also exempt.
 3. A version bump, tag or release.
 4. A suppression or deviation, new dependency or submodule, or public API change.
 
@@ -88,3 +94,7 @@ Repository text follows `EN-03.9` to `EN-03.13`: one reader and register,
 plain and spare prose in British spelling, defined terms, comments that state
 what the code cannot, and one owner per fact. The terse style of messages
 between agents does not carry over into repository text.
+
+Hardware documentation states what any rig must satisfy and its datasheet
+basis. A particular bench's parts, values and wiring go in a private record,
+not in repository text or commit messages.
